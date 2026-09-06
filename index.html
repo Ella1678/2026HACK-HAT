@@ -1,0 +1,2695 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#02040a">
+<title>火种计划 · 地心航线 | Ember Project · Journey to the Core</title>
+<style>
+:root{
+  --cyan:#83efff;
+  --amber:#ffc36b;
+  --red:#ff4d5a;
+  --dim:#8ca4ad;
+  --ink:#eaf1f3;
+  --panel:rgba(9,14,21,.84);
+  --line:rgba(131,239,255,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:#000;
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  overflow:hidden;
+  -webkit-user-select:none;
+  user-select:none;
+  touch-action:manipulation;
+}
+button{font-family:inherit}
+
+#app{
+  position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;
+  background:#03050c;overflow:hidden;touch-action:none;
+  transition:max-width .55s ease,border-radius .55s ease,box-shadow .55s ease;
+}
+#app.palm{
+  max-width:430px;border-radius:30px;border:10px solid #04060c;
+  box-shadow:0 0 90px rgba(131,239,255,.06),0 0 30px rgba(255,77,90,.08);
+}
+@media (max-width:700px){
+  #app.palm{max-width:none;border:none;border-radius:0;box-shadow:none}
+}
+
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 36%,rgba(0,0,0,.42) 80%,rgba(0,0,0,.86) 100%)}
+.scan{
+  position:absolute;inset:0;pointer-events:none;opacity:.14;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0 1px,transparent 1px 3px);
+  transition:opacity .8s;
+}
+#app.vis2d .scan{opacity:.3}
+#noise{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
+#noise.on{opacity:.16}
+#noise.on.hard{opacity:.5}
+
+.layer{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px;z-index:6}
+.layer.show{display:flex}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:14px;border:1px solid transparent;cursor:pointer;
+  font-size:16px;letter-spacing:2px;padding:14px 26px;transition:transform .18s,box-shadow .18s,background .18s;
+}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-primary{
+  color:#101114;background:linear-gradient(135deg,#ffe0a3,#ffb45f);
+  box-shadow:0 8px 34px rgba(255,176,90,.28),inset 0 1px rgba(255,255,255,.5);
+}
+.btn-primary:hover{box-shadow:0 8px 44px rgba(255,176,90,.42),inset 0 1px rgba(255,255,255,.5)}
+.btn-ghost{
+  color:var(--cyan);background:rgba(131,239,255,.05);border-color:rgba(131,239,255,.35);
+}
+.btn-ghost:hover{background:rgba(131,239,255,.12)}
+.btn-mini{
+  border-radius:10px;padding:8px 12px;font-size:12px;letter-spacing:1px;color:var(--dim);
+  background:rgba(8,13,19,.7);border:1px solid rgba(140,164,173,.25);cursor:pointer;transition:color .2s,border-color .2s;
+}
+.btn-mini:hover{color:var(--ink);border-color:rgba(140,164,173,.6)}
+
+/* title */
+#titleScreen{justify-content:space-between;z-index:6;pointer-events:auto;overflow-y:auto}
+.tWrap{padding-top:calc(env(safe-area-inset-top,0px) + 16px);animation:riseIn 1s ease both}
+.kicker{font-size:12px;letter-spacing:5px;color:var(--dim);margin-bottom:16px}
+h1{
+  font-size:clamp(22px,6.8vw,56px);font-weight:800;letter-spacing:.05em;line-height:1.25;
+  background:linear-gradient(115deg,#f6fbfc 8%,#a8eef7 48%,#ffbe76 92%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 36px rgba(131,239,255,.12);
+  animation:titleGlow 5s ease-in-out infinite;
+}
+.dot{opacity:.45;font-weight:300}
+.sub{margin-top:14px;color:#c3d6dc;font-size:clamp(13px,2vw,16px);letter-spacing:3px;opacity:.9}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px}
+.chip{
+  font-size:11px;letter-spacing:1px;padding:7px 12px;border-radius:99px;color:#b9d2da;
+  border:1px solid rgba(140,164,173,.3);background:rgba(9,14,21,.5);
+}
+.chip.core{border-color:rgba(255,195,107,.4);color:#ffd9a0}
+.chip.palm{border-color:rgba(131,239,255,.4);color:#bdeff7}
+.enNote{display:block;margin-top:3px;font-size:9px;letter-spacing:1px;opacity:.72;font-weight:400}
+.titleEn{
+  margin-top:10px;font-size:clamp(10px,1.7vw,14px);letter-spacing:3px;
+  color:#9db7bf;text-transform:uppercase;animation:riseIn 1.1s .12s ease both;
+}
+.pitch{
+  margin:18px auto 0;max-width:560px;font-size:13px;line-height:1.9;color:#7f979f;
+  letter-spacing:1px;
+}
+.btnWrap{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 26px);animation:riseIn 1.2s .25s ease both}
+.btnStack{display:flex;flex-direction:column;align-items:center;gap:12px;width:min(420px,92vw)}
+.btnStack .btn{width:100%}
+.miniRow{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.tip{font-size:11px;color:#5f747c;letter-spacing:1px}
+@keyframes riseIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes titleGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(131,239,255,.08))}50%{filter:drop-shadow(0 0 26px rgba(255,195,107,.16))}}
+
+/* hud */
+#hud{
+  position:absolute;top:0;left:0;right:0;z-index:8;display:none;
+  justify-content:space-between;align-items:flex-start;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 0;
+  pointer-events:none;
+}
+#hud.show{display:flex}
+.hudLeft{display:flex;flex-direction:column;gap:5px}
+.hudChip{
+  font-size:11px;letter-spacing:2px;color:#9fc6cf;background:rgba(9,15,21,.66);
+  border:1px solid rgba(131,239,255,.2);border-radius:8px;padding:5px 9px;display:inline-flex;gap:8px;align-items:center;
+}
+.hudChip b{color:var(--cyan);font-weight:600}
+.hudLoc{font-size:11px;color:#66818b;letter-spacing:1px;padding-left:3px}
+.hudBtns{display:flex;gap:6px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:60%}
+.btnMini.on{color:#0a0d10;background:var(--cyan);border-color:var(--cyan)}
+#palmBtn2{display:inline-flex}
+@media (min-width:701px){#palmBtn2{display:none}}
+
+/* flight meters */
+#flightStats{
+  position:absolute;left:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:8;
+  display:none;flex-direction:column;gap:8px;width:min(220px,72vw);
+  pointer-events:none;font-size:10px;letter-spacing:1px;color:#78929b;
+  background:linear-gradient(90deg,rgba(5,9,14,.72),transparent);padding:10px 12px;border-radius:10px;
+}
+#flightStats.show{display:flex}
+.meter{display:grid;grid-template-columns:64px 1fr 52px;align-items:center;gap:7px}
+.meter .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+.meter .fill{display:block;height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,#4f9fd8,#83efff);transition:width .25s linear}
+.meter.hot .fill{background:linear-gradient(90deg,#e77832,#ff4d5a)}
+.meter.dmg .fill{background:linear-gradient(90deg,#8fa3ad,#d9e5ea)}
+.flightMsg{margin-top:4px;color:#ffbe76;font-size:11px;letter-spacing:1px;max-width:230px;line-height:1.5}
+
+/* dialogue */
+#dialogue{
+  position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%);
+  width:min(780px,95%);z-index:10;display:none;pointer-events:auto;
+}
+#dialogue.show{display:block;animation:diaIn .4s ease both}
+@keyframes diaIn{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+.diaShell{
+  position:relative;padding:16px 18px 15px;border-radius:18px;
+  background:linear-gradient(160deg,rgba(10,16,24,.84),rgba(4,7,12,.9));
+  border:1px solid var(--line);box-shadow:0 20px 70px rgba(0,0,0,.6);
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+.diaMeta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px;font-size:11px;letter-spacing:1px}
+.diaSpk{color:var(--cyan);font-weight:700;letter-spacing:2px}
+.diaSpk.memory{color:#ffb2a8}
+.diaHint{color:#51656e;font-size:10px;white-space:nowrap;overflow:hidden}
+.diaLine{
+  min-height:64px;line-height:1.8;font-size:clamp(15px,2.15vw,18px);
+  color:#e8eff1;letter-spacing:.4px;white-space:pre-wrap;word-break:break-word;
+}
+#diaEn{
+  display:none;margin-top:6px;color:#7e9aa4;
+  font-size:clamp(12px,1.65vw,14px);line-height:1.65;letter-spacing:.3px;
+  white-space:pre-wrap;word-break:break-word;
+}
+#diaEn.show{display:block}
+.caret::after{content:"▍";margin-left:2px;color:var(--cyan);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+#nextBtn{
+  display:none;margin:16px auto 0;border-radius:12px;padding:11px 26px;
+  border:1px solid rgba(131,239,255,.45);color:var(--cyan);background:rgba(131,239,255,.06);
+  font-size:14px;letter-spacing:3px;cursor:pointer;transition:background .2s;
+}
+#nextBtn:hover{background:rgba(131,239,255,.16)}
+#choiceBox{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.choice{
+  display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;
+  border-radius:12px;border:1px solid rgba(131,239,255,.26);background:rgba(10,18,26,.72);
+  padding:13px 15px;color:#dbeaee;cursor:pointer;transition:border-color .18s,background .18s,transform .12s;
+  font-size:14px;letter-spacing:.5px;line-height:1.55;
+}
+.choice:hover{border-color:rgba(131,239,255,.8);background:rgba(131,239,255,.09);transform:translateX(3px)}
+.choice:active{transform:scale(.995)}
+.choice.locked{
+  cursor:not-allowed;border-style:dashed;border-color:rgba(128,144,151,.22);
+  color:#6b7d84;background:rgba(7,10,15,.55);opacity:.72;
+}
+.choice.locked:hover{transform:none;background:rgba(7,10,15,.72);border-color:rgba(255,77,90,.35)}
+.choice .ctag{
+  flex:none;min-width:22px;height:22px;border-radius:7px;background:rgba(131,239,255,.14);
+  color:var(--cyan);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-top:1px;
+}
+.choice .cbody{flex:1}
+.choice .cdesc{display:block;font-size:11px;color:#5f7b84;margin-top:3px;letter-spacing:1px}
+.choice .cen,.diaEnSmall{display:block;font-size:10px;color:#6f8892;margin-top:2px;font-weight:400;letter-spacing:.3px;line-height:1.5}
+.choice .cdesc .cen{color:#516c76}
+.choice.new{border-color:rgba(255,195,107,.5);background:rgba(45,30,10,.35)}
+.choice.new:hover{border-color:#ffc36b}
+.choice.new .ctag{background:rgba(255,195,107,.18);color:var(--amber)}
+.choice.locked .ctag{background:rgba(128,144,151,.12);color:#768a91}
+.choice.active{outline:2px solid var(--cyan);outline-offset:1px;background:rgba(131,239,255,.12)}
+.btn.activeMenu{outline:3px solid var(--cyan);outline-offset:3px;box-shadow:0 0 18px rgba(131,239,255,.35)}
+
+/* warnings / flashes */
+.cover{position:absolute;inset:0;pointer-events:none;z-index:40}
+#blackOut{background:#000;opacity:0;transition:opacity .45s ease}
+#blackOut.on{opacity:1}
+#flash{background:#fff;opacity:0;z-index:39}
+#flash.cyan{background:var(--cyan)}
+#flash.red{background:var(--red)}
+#flash.on{animation:flashFade .7s ease}
+@keyframes flashFade{0%{opacity:.55}100%{opacity:0}}
+#warnBox{
+  position:absolute;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+  background:rgba(70,0,0,.12);padding:24px;text-align:center;
+}
+#warnBox.on{display:flex;animation:warnShake .45s steps(3) 2}
+.warnText{
+  color:var(--red);font-size:clamp(15px,2.5vw,22px);letter-spacing:2px;line-height:1.9;
+  text-shadow:0 0 14px rgba(255,40,60,.75);
+}
+@keyframes warnShake{0%{transform:translate(0)}25%{transform:translate(-5px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-3px,1px)}100%{transform:none}}
+#toast{
+  position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);transform:translate(-50%,14px);
+  z-index:22;max-width:86%;padding:10px 16px;border-radius:11px;font-size:12px;letter-spacing:1px;text-align:center;
+  color:#cfe4e9;background:rgba(8,14,20,.88);border:1px solid rgba(131,239,255,.2);
+  opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;
+}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* keyboard mini games */
+#miniPanel{
+  position:absolute;inset:0;z-index:28;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 40%,rgba(16,24,32,.94),rgba(2,4,8,.97) 80%);padding:24px;
+}
+#miniPanel.show{display:flex}
+#miniArt{position:relative;width:min(280px,56vw);aspect-ratio:1.1;margin-bottom:10px;opacity:.9}
+#miniArt svg{width:100%;height:100%}
+.miniCard{
+  position:relative;width:min(680px,92%);border-radius:18px;padding:18px 20px;
+  background:linear-gradient(160deg,rgba(12,20,28,.86),rgba(3,6,10,.94));
+  border:1px solid rgba(131,239,255,.18);text-align:center;box-shadow:0 20px 80px rgba(0,0,0,.6);
+}
+#miniTitle{font-size:clamp(16px,2.4vw,22px);letter-spacing:4px;color:var(--cyan);margin-bottom:6px}
+#miniDesc{font-size:12px;color:#8ba1aa;letter-spacing:1px;min-height:34px;line-height:1.6}
+#miniKeys{display:flex;justify-content:center;gap:14px;margin:18px 0 10px;align-items:center}
+.miniArrow{
+  width:min(74px,17vw);height:min(74px,17vw);border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:min(34px,8vw);border:2px solid rgba(131,239,255,.3);color:#b9edf5;background:rgba(131,239,255,.05);
+  box-shadow:0 0 22px rgba(131,239,255,.12);
+}
+.miniArrow.need{border-color:var(--cyan);color:#fff;animation:keyPulse .7s ease-in-out infinite;box-shadow:0 0 26px rgba(131,239,255,.5)}
+.miniArrow.done{border-color:rgba(255,195,107,.7);color:var(--amber)}
+#miniPanel.shake{animation:warnShake .35s steps(3)}
+#miniProgress{display:flex;justify-content:center;gap:8px;margin-top:8px}
+#miniProgress i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.12)}
+#miniProgress i.on{background:var(--cyan);box-shadow:0 0 10px rgba(131,239,255,.7)}
+#miniTip{margin-top:14px;font-size:10px;letter-spacing:2px;color:#546a73}
+@keyframes keyPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+#count{
+  position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);right:22px;z-index:12;display:none;
+  font-variant-numeric:tabular-nums;font-size:22px;font-weight:200;color:var(--red);letter-spacing:2px;
+  text-shadow:0 0 18px rgba(255,77,90,.6);
+}
+#count.show{display:block}
+
+/* classic 2D dive mode */
+#classicWrap{
+  position:absolute;inset:0;z-index:5;display:none;overflow:hidden;
+  background:radial-gradient(circle at 50% 20%,#120a08 0%,#050309 72%);
+}
+#classicWrap.show{display:block}
+#classicCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* end screen */
+#endScreen{z-index:7;overflow-y:auto}
+.endKicker{font-size:11px;letter-spacing:6px;color:#65777e;margin-bottom:20px;animation:riseIn .8s ease both}
+.endTitle{
+  font-size:clamp(34px,7vw,58px);font-weight:800;letter-spacing:12px;color:#0a0d10;
+  text-shadow:0 0 0 transparent;animation:endFlick 3.2s linear infinite;margin-bottom:26px;
+  background:linear-gradient(180deg,#fff,#b9ccd2);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.endLines{display:flex;flex-direction:column;gap:14px;animation:riseIn 1s .35s ease both}
+.endLines p{font-size:clamp(14px,2.4vw,18px);letter-spacing:3px;color:#d4e2e6;line-height:1.8}
+.endLines p.dim{color:#6c838b;font-size:12px;margin-top:6px}
+.endQuestion{color:#ffc36b;font-size:clamp(13px,2vw,16px);letter-spacing:2px;margin-top:22px;line-height:1.8}
+#endScreen .btnWrap{margin-top:34px}
+@keyframes endFlick{0%,100%{opacity:1}7%{opacity:.5}8%{opacity:1}89%{opacity:1}90%{opacity:.3}91%{opacity:1}}
+
+#app.glitching{animation:appGlitch .5s steps(2) infinite}
+@keyframes appGlitch{
+  0%{transform:translate(0)}
+  25%{transform:translate(-3px,1px)}
+  50%{transform:translate(2px,-1px)}
+  75%{transform:translate(-1px,2px)}
+  100%{transform:none}
+}
+
+/* ===== opening CG ===== */
+#cg{position:absolute;inset:0;z-index:45;display:none;background:#000;overflow:hidden}
+#cg.show{display:block}
+#cgSkip{
+  position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;z-index:7;
+  border-radius:10px;padding:8px 12px;font-size:12px;letter-spacing:1px;color:#9fb3ba;
+  background:rgba(5,8,12,.62);border:1px solid rgba(140,164,173,.28);cursor:pointer;
+}
+#cgSkip:hover{color:#fff;border-color:rgba(140,164,173,.7)}
+.cgScene{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity 1.4s ease,visibility 1.4s;overflow:hidden;pointer-events:none}
+.cgScene.active{opacity:1;visibility:visible}
+#cgSub{
+  position:absolute;left:50%;bottom:15%;transform:translateX(-50%);width:min(820px,90%);
+  z-index:5;text-align:center;font-size:clamp(18px,3.2vw,29px);letter-spacing:4px;
+  color:#eef4f6;text-shadow:0 0 26px rgba(0,0,0,.95),0 2px 6px rgba(0,0,0,.8);
+  line-height:1.9;animation:cgCapIn .9s ease both;
+}
+@keyframes cgCapIn{0%{opacity:0;letter-spacing:1.2em;filter:blur(4px)}100%{opacity:1;letter-spacing:4px;filter:blur(0)}}
+#cgSub .cgEn{display:block;margin-top:9px;font-size:.5em;letter-spacing:2px;color:#bfd5db;opacity:.85}
+#cgMeta{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:min(600px,78%);z-index:5}
+.cgTimes{display:flex;justify-content:space-between;font-size:10px;letter-spacing:1px;color:#71878f;margin-bottom:7px}
+.cgProgress{height:3px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
+.cgProgress i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#83efff,#ffc36b);border-radius:2px}
+
+/* scene 0: wasteland */
+.s0{background:linear-gradient(#0a0d10 0%,#1b2227 52%,#06080a 100%)}
+.cgSun{position:absolute;left:13%;top:15%;width:15vmin;height:15vmin;border-radius:50%;background:radial-gradient(circle at 40% 40%,#d7dfe2,rgba(190,202,207,.1));opacity:.3;box-shadow:0 0 80px rgba(210,225,230,.18)}
+.skyline{position:absolute;left:0;right:0;bottom:21%;height:62%}
+.skyline i{position:absolute;bottom:0;background:linear-gradient(90deg,#050709,#0a0d11);box-shadow:inset 0 0 0 1px rgba(150,170,180,.03)}
+.skyline i::after{content:"";position:absolute;left:0;right:0;bottom:100%;height:7%;background:#050709}
+.ruinGround{position:absolute;left:0;right:0;bottom:0;height:22%;background:linear-gradient(#0c1013,#040506)}
+.ruinGround::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 90px,rgba(255,255,255,.02) 90px 92px)}
+.ruinFog{position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(15,20,24,.55));mix-blend-mode:screen;animation:cgFog 16s ease-in-out infinite}
+@keyframes cgFog{0%,100%{opacity:.35;transform:translateX(-1%)}50%{opacity:.6;transform:translateX(1%)}}
+.s0.active .cgSun{animation:cgSunBreath 18s ease-in-out infinite}
+@keyframes cgSunBreath{0%,100%{opacity:.2}50%{opacity:.4}}
+
+/* scene 1: bunker */
+.s1{background:linear-gradient(105deg,#0b0f13,#242c33 48%,#080b0f)}
+.s1::before{content:"";position:absolute;left:0;top:0;bottom:0;width:16%;background:linear-gradient(90deg,rgba(0,0,0,.7),transparent);z-index:2}
+.s1::after{content:"";position:absolute;right:0;top:0;bottom:0;width:16%;background:linear-gradient(-90deg,rgba(0,0,0,.7),transparent);z-index:2}
+.bunkerLights{position:absolute;top:0;left:0;right:0;height:9%;display:flex;gap:7%;justify-content:center}
+.bunkerLights i{width:5%;height:100%;background:linear-gradient(#9fd5dd,rgba(159,213,221,.05));opacity:.55;animation:cgLights 5s ease-in-out infinite}
+.bunkerLights i:nth-child(2){animation-delay:-1.6s}.bunkerLights i:nth-child(3){animation-delay:-3.2s}
+@keyframes cgLights{0%,100%{opacity:.2}50%{opacity:.8}}
+.bunkerPanels{position:absolute;top:10%;left:17%;right:17%;bottom:24%;background:repeating-linear-gradient(90deg,#101519 0 90px,#151b20 90px 100px);border:1px solid #1c2329;opacity:.85}
+.sci{position:absolute;left:-10%;width:16px;height:46px;background:#04070a;border-radius:9px 9px 3px 3px;animation:cgWalk var(--dur,13s) linear infinite;animation-delay:var(--delay,0s);z-index:3}
+.sci::before{content:"";position:absolute;left:50%;top:-11px;width:13px;height:13px;transform:translateX(-50%);background:#04070a;border-radius:50%}
+.sci::after{content:"";position:absolute;top:14px;left:-2px;width:19px;height:7px;background:#04070a;transform:rotate(-8deg)}
+@keyframes cgWalk{0%{left:-8%}100%{left:108%}}
+.console{position:absolute;left:8%;right:8%;bottom:14%;height:11%;background:linear-gradient(180deg,#161c21,#080b0f);border:1px solid #1a2127;border-radius:4px 4px 0 0;z-index:2;box-shadow:0 0 30px rgba(131,239,255,.05)}
+.console::after{content:"";position:absolute;left:8%;top:26%;width:12%;height:22%;border-radius:2px;background:#071018;box-shadow:0 0 0 1px #1c3a45,0 0 14px rgba(131,239,255,.35),18px 0 0 #071018,18px 0 0 1px #1c3a45,36px 0 0 #071018,36px 0 0 1px #1c3a45,54px 0 0 #071018,54px 0 0 1px #1c3a45;animation:consoleBlink 3s steps(2) infinite}
+@keyframes consoleBlink{50%{filter:brightness(.5)}}
+
+/* scene 2 & 4: robot */
+.s2,.s4{background:radial-gradient(circle at 50% 40%,#1d242b,#05070a 78%)}
+.cgDoor{position:absolute;inset:0;z-index:4;pointer-events:none}
+.doorHalf{position:absolute;top:0;bottom:0;width:50%;background:linear-gradient(90deg,#10151a,#1b2229 52%,#070a0e);box-shadow:inset 0 0 60px rgba(0,0,0,.8);transition:transform 7.5s cubic-bezier(.6,.05,.3,1)}
+.doorHalf.dl{left:0}
+.doorHalf.dr{right:0}
+.s2.active .doorHalf.dl{transform:translateX(-102%)}
+.s2.active .doorHalf.dr{transform:translateX(102%)}
+.rStage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.rHead{
+  position:relative;width:min(300px,58vw);aspect-ratio:1.22;z-index:3;
+  background:linear-gradient(150deg,#232b33,#0c1015 78%);
+  clip-path:polygon(50% 0,81% 12%,94% 46%,88% 90%,64% 100%,36% 100%,12% 90%,6% 46%,19% 12%);
+  filter:drop-shadow(0 0 34px rgba(0,0,0,.7));opacity:0;transition:opacity 2.2s ease 1s;
+}
+.s2.active .rHead{opacity:1}
+.s4.active .rHead{opacity:1;transition-delay:.3s}
+.rNeck{position:absolute;left:50%;bottom:9%;width:26%;height:24%;transform:translateX(-50%);background:linear-gradient(#1b2126,#0a0d11);clip-path:polygon(18% 0,82% 0,100% 100%,0 100%);z-index:2}
+.rEyeRow{position:absolute;left:50%;top:47%;display:flex;gap:13%;transform:translate(-50%,-50%)}
+.rEye{
+  width:min(58px,11vw);height:min(58px,11vw);border-radius:50%;
+  background:radial-gradient(circle at 50% 45%,#05070a 30%,#11161b 78%);
+  border:2px solid #0d1217;box-shadow:inset 0 0 14px #000;
+}
+.s2.active .rEye{animation:eyeIgnite 4s 6.5s steps(1,end) forwards}
+.rHead.ignited .rEye,.s4 .rEye{background:radial-gradient(circle at 50% 45%,#d9fbff 0 18%,#6be4f4 36%,#0a141a 70%);box-shadow:0 0 30px rgba(131,239,255,.75),inset 0 0 12px rgba(230,255,255,.9)}
+.s4 .rEye{width:min(120px,22vw);height:min(120px,22vw)}
+.s4 .rEyeRow{gap:15%}
+@keyframes eyeIgnite{
+  0%,30%{background:radial-gradient(circle at 50% 45%,#05070a 30%,#11161b 78%);box-shadow:inset 0 0 14px #000}
+  50%{background:radial-gradient(circle at 50% 45%,#20333a 30%,#0a0f13 78%);box-shadow:0 0 8px rgba(131,239,255,.25)}
+  70%{background:radial-gradient(circle at 50% 45%,#bfeef6 0 20%,#6be4f4 40%,#0a141a 72%);box-shadow:0 0 40px rgba(131,239,255,.9)}
+  100%{background:radial-gradient(circle at 50% 45%,#d9fbff 0 18%,#6be4f4 36%,#0a141a 70%);box-shadow:0 0 30px rgba(131,239,255,.75)}
+}
+.s2.active .rEyeRow{animation:eyePulse 4.6s 10s ease-in-out infinite}
+@keyframes eyePulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+.rCheek{position:absolute;left:50%;bottom:13%;width:30%;height:7%;transform:translateX(-50%);background:repeating-linear-gradient(0deg,#0a0e12 0 3px,#171d22 3px 5px);border-radius:2px;opacity:.8}
+.rSide{position:absolute;top:24%;width:9%;height:18%;background:#0d1216;border-radius:3px}
+.rSide.l{left:13%}.rSide.r{right:13%}
+.rHead.big{width:min(560px,88vw);transform:scale(.92);animation:headRise 6s ease both}
+.s4.active .rHead.big{animation:headTurn 20s ease-in-out infinite alternate}
+@keyframes headTurn{0%,100%{transform:translateX(-2%) rotate(-1deg) scale(.95)}50%{transform:translateX(2%) rotate(1.4deg) scale(1)}}
+.s4.active .rEyeRow{animation:eyePulse 2.4s ease-in-out infinite}
+.s4 .rHead{background:linear-gradient(150deg,#2a343c,#0e1318 80%)}
+.s4.active .rStage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 2px,transparent 2px 5px);mix-blend-mode:overlay}
+
+/* scene 3: montage */
+.s3{background:#040506}
+.mSub{position:absolute;inset:0;opacity:0;transition:opacity .16s ease;pointer-events:none}
+.mSub.on{opacity:1}
+.mSub::after{content:"";position:absolute;inset:0;background:rgba(255,40,50,.06);mix-blend-mode:screen}
+.mTunnel{background:radial-gradient(circle at 50% 44%,rgba(140,40,18,.8),#050608 62%)}
+.mTunnel::before{content:"";position:absolute;left:50%;top:44%;width:220vmax;height:220vmax;transform:translate(-50%,-50%) scale(.8);background:repeating-radial-gradient(circle at 50% 50%,transparent 0 42px,rgba(255,150,70,.22) 43px 47px);animation:cgZoom 1.9s linear infinite}
+.mLava{background:linear-gradient(180deg,#120606,#5c1305 34%,#a02a08 48%,#120504 74%)}
+.mLava::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-10%;height:34%;background:radial-gradient(ellipse at 50% 0,#ffb04c 0,#ff4a1e 45%,rgba(255,60,20,0) 75%);filter:blur(6px);animation:lavaWave 2.8s ease-in-out infinite}
+.mAbyss{background:radial-gradient(circle at 50% 86%,#420604 0%,#000 48%)}
+.mAbyss::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(2deg,transparent 0 26px,rgba(255,255,255,.05) 26px 28px);transform-origin:center;animation:abyssFall 1.2s linear infinite}
+.mIron{background:linear-gradient(180deg,#05070a,#20252b 18%,#9aa7ae 26%,#4c555b 30%,#0b0e11 31%,#1a1f24 52%,#05070a 55%,#242a2f 68%,#0b0e11 72%)}
+.mIron::before{content:"";position:absolute;top:0;left:20%;right:20%;height:120%;background:repeating-linear-gradient(90deg,transparent 0 34px,rgba(220,235,240,.4) 35px 37px,transparent 38px 80px);animation:ironDrip 1.7s linear infinite}
+@keyframes cgZoom{to{transform:translate(-50%,-50%) scale(1.7);opacity:.5}}
+@keyframes lavaWave{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-3%) scaleY(1.12)}}
+@keyframes abyssFall{from{transform:translateY(-8%)}to{transform:translateY(8%)}}
+@keyframes ironDrip{from{transform:translateY(-12%)}to{transform:translateY(12%)}}
+
+/* scene 5: fade */
+.s5{background:#000}
+
+/* trailer video modal */
+#trailerWrap{
+  position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,2,.9);flex-direction:column;gap:14px;
+}
+#trailerWrap.show{display:flex}
+#trailerVideo{
+  width:min(94vw,1080px);max-height:82vh;border:1px solid rgba(131,239,255,.22);
+  border-radius:12px;background:#000;outline:none;box-shadow:0 24px 90px rgba(0,0,0,.8);
+}
+#trailerHint{font-size:11px;letter-spacing:2px;color:#647d86}
+#trailerClose{
+  position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;z-index:3;
+  width:42px;height:42px;border-radius:50%;color:#cfe0e4;background:rgba(10,15,20,.7);
+  border:1px solid rgba(140,164,173,.3);font-size:18px;cursor:pointer;
+}
+#trailerClose:hover{border-color:var(--cyan);color:#fff}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+  <div id="classicWrap"><canvas id="classicCanvas"></canvas></div>
+  <div class="vig"></div>
+  <div class="scan"></div>
+  <div id="noise"></div>
+
+  <div id="hud">
+    <div class="hudLeft">
+      <div class="hudChip"><b>火种-7 · Ember-7</b><span id="demoTag">任务中</span></div>
+      <div class="hudLoc" id="hudLoc">距地心 6,371 km</div>
+    </div>
+    <div class="hudBtns">
+      <button class="btnMini" id="autoBtn">自动巡航 · AUTO</button>
+      <button class="btnMini" id="skipBtn">跳过本段 · SKIP</button>
+      <button class="btnMini" id="soundBtn">声音开 · SOUND ON</button>
+      <button class="btnMini" id="palmBtn2">掌中 · PALM</button>
+    </div>
+  </div>
+
+  <div id="flightStats">
+    <div class="meter"><span>距地心<br><i class="enNote">Distance</i></span><div class="bar"><i class="fill" id="barDepth"></i></div><b id="depthTxt">6371km</b></div>
+    <div class="meter hot"><span>温度负荷<br><i class="enNote">Heat Load</i></span><div class="bar"><i class="fill" id="barHeat"></i></div><b id="heatTxt">8%</b></div>
+    <div class="meter dmg"><span>机体完整度<br><i class="enNote">Integrity</i></span><div class="bar"><i class="fill" id="barBody"></i></div><b id="bodyTxt">100%</b></div>
+    <div class="flightMsg" id="flightMsg"></div>
+  </div>
+
+  <div id="dialogue">
+    <div class="diaShell">
+      <div class="diaMeta">
+        <span class="diaSpk" id="diaSpk">系统 · System</span>
+        <span class="diaHint" id="diaHint"></span>
+      </div>
+      <div class="diaLine" id="diaLine"></div>
+      <div id="diaEn"></div>
+      <div id="choiceBox"></div>
+      <button id="nextBtn">继续 Continue</button>
+    </div>
+  </div>
+
+  <section id="titleScreen" class="layer show">
+    <div class="tWrap">
+      <div class="kicker">末世 2157 · 单人交互叙事<br><i class="enNote">POST-APOCALYPTIC 2157 · SOLO INTERACTIVE STORY</i></div>
+      <h1>火种计划<span class="dot"> · </span>地心航线</h1>
+      <div class="sub">向地心坠落，直到世界的火重新亮起</div>
+      <div class="titleEn">Ember Project · Journey to the Core<span style="display:block;font-size:.78em;letter-spacing:1.5px;margin-top:5px;color:#7d96a0">Fall toward the core until the world’s fire burns again</span></div>
+      <div class="chips">
+        <span class="chip core">主赛道 · 地心飞行｜俯冲操控<i class="enNote">Core Flight Track · Dive Control</i></span>
+        <span class="chip palm">辅赛道 · 掌中世界｜竖屏触控<i class="enNote">World in Palm · Portrait Touch</i></span>
+      </div>
+      <p class="pitch">起初你只有一条路。越靠近地心，你能做的选择越多——你也会越烫。<span class="enNote" style="font-size:10px;color:#6f8892;margin-top:7px">At first, there is only one path. The deeper you fall, the more choices appear — and the hotter you become.</span></p>
+    </div>
+    <div class="btnWrap">
+      <div class="btnStack">
+        <button class="btn btn-primary" id="btnStart">▶ 播放 2:30 开场CG <span class="enNote">Play 2:30 Opening CG</span></button>
+        <button class="btn btn-ghost" id="btnDirect">直接进入游戏 <span class="enNote">Enter Game Directly</span></button>
+        <button class="btn btn-ghost" id="btn2D">▦ 地心探险 · 2D玩法 <span class="enNote">Core Expedition · 2D Mode</span></button>
+        <button class="btn btn-ghost" id="btnDemo">演示模式 · 自动巡航 <span class="enNote">Demo Mode · Auto Cruise</span></button>
+        <button class="btn btn-ghost" id="btnTrailer">▶ 剧情先导片（46秒）<span class="enNote">Story Trailer (46s)</span></button>
+      </div>
+      <div class="miniRow">
+        <button class="btn btn-mini" id="btnPalm">掌中模式 <span class="enNote">Palm Mode</span></button>
+        <span class="tip">全程键盘：方向键/WASD移动 · 上下+回车选择 · 空格继续<br><i class="enNote">Keyboard only: Arrows/WASD move · ↑↓+Enter select · Space continues</i></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="endScreen" class="layer">
+    <div class="endKicker">信号中断<i class="enNote">Signal Lost</i></div>
+    <h2 class="endTitle">信号丢失</h2>
+    <div style="margin-top:-18px;margin-bottom:22px;font-size:13px;letter-spacing:4px;color:#aebfc6">SIGNAL LOST</div>
+    <div class="endLines">
+      <p>火种-7，任务结束。<span class="enNote">Ember-7, mission complete.</span></p>
+      <p>人类的监视器信号丢失。<span class="enNote">Humanity's monitors have lost your signal.</span></p>
+      <p class="dim">没有人知道，它最后是否走进了那扇门。<span class="enNote">No one knows if it finally walked through that door.</span></p>
+    </div>
+    <p class="endQuestion">如果那台机器人是你，你会推开那扇门吗？<span class="enNote">If that machine were you, would you push the door open?</span></p>
+    <div class="btnWrap">
+      <button class="btn btn-primary" id="btnRestart">再次坠入地心 <span class="enNote">Fall to the Core Again</span></button>
+    </div>
+  </section>
+
+  <div id="cg">
+    <div id="cgSc0" class="cgScene s0"></div>
+    <div id="cgSc1" class="cgScene s1"></div>
+    <div id="cgSc2" class="cgScene s2"></div>
+    <div id="cgSc3" class="cgScene s3"></div>
+    <div id="cgSc4" class="cgScene s4"></div>
+    <div id="cgSc5" class="cgScene s5"></div>
+    <div id="cgSub"></div>
+    <div id="cgMeta">
+      <div class="cgTimes"><span id="cgClock">0:00</span><span>2:30</span></div>
+      <div class="cgProgress"><i id="cgBar"></i></div>
+    </div>
+    <button id="cgSkip">跳过开场（空格 / Esc）<span class="enNote">Skip Opening (Space / Esc)</span></button>
+  </div>
+
+  <div id="count">30</div>
+  <div id="warnBox"><div class="warnText" id="warnText"></div></div>
+  <div id="miniPanel">
+    <div id="miniArt"></div>
+    <div class="miniCard">
+      <div id="miniTitle">自检程序 · Self-Check</div>
+      <div id="miniDesc">根据屏幕箭头按下对应方向键<i class="enNote">Press the arrow shown on screen</i></div>
+      <div id="miniKeys"><div class="miniArrow need">↑</div></div>
+      <div id="miniProgress"></div>
+      <div id="miniTip">方向键输入 · 提示：↑↓←→ 对应上下左右<i class="enNote">Arrow-key input · ↑↓←→ = up/down/left/right</i></div>
+    </div>
+  </div>
+  <div id="toast"></div>
+  <div id="flash" class="cover"></div>
+  <div id="blackOut" class="cover"></div>
+
+  <div id="trailerWrap">
+    <button id="trailerClose" aria-label="关闭先导片 / Close trailer">✕</button>
+    <video id="trailerVideo" tabindex="0" playsinline preload="metadata" src="地心飞行-开场串联.mp4"></video>
+    <div id="trailerHint">空格：播放/暂停　←/→：快退/快进　Esc：关闭<br><i class="enNote">Space: play/pause · ←/→: seek · Esc: close (full keyboard support)</i></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var $=function(id){return document.getElementById(id)};
+  var scene=$('scene'), ctx=scene.getContext('2d');
+  var low=document.createElement('canvas'), lctx=low.getContext('2d');
+  var app=$('app');
+  var W=0,H=0,DPR=1;
+
+  var game={
+    mode:'title', visual:'3d', demo:false, muted:false, palm:false,
+    heat:6, integrity:100, distance:6371, awake:12,
+    flags:{rested:false,danced:false,lookedBack:false,carved:false,called:false}
+  };
+  var TR={};
+  Object.assign(TR,{
+    /* intro & button labels */
+    '任务编号：火种计划 · 舱体 07':'Mission ID: Project Ember · Pod 07',
+    '公元 2157 年，地球能源枯竭，人类文明濒临灭绝。':'Year 2157 — Earth’s energy is gone; civilization is dying.',
+    '最后的希望，沉睡在地心深处——『火种』。':'The last hope sleeps at the planet’s heart — the Ember.',
+    '你是被选中的『最后战士』。':'You are the chosen “last warrior.”',
+    '你的任务：抵达地心，激活火种。':'Your mission: reach the core and ignite the Ember.',
+    '重力轨道稳定，开始下潜。':'Gravity rail stable — beginning descent.',
+    '准备完毕':'Ready','进入地心通道':'Enter Core Passage','继续下潜':'Continue Dive','继续向前':'Move Forward',
+    '降落舱校准':'Descent Capsule Calibration',
+    '系统需要你确认四条航向信号，请按提示输入方向键。':'System requires four heading signals — press the arrows shown.',
+    '校准完成':'Calibration Complete',
+    '降落舱已锁定地心航线。':'Capsule locked onto the core route.',
+    /* Fork 1 */
+    '隧道冰冷，监测灯一盏一盏亮起。':'The tunnel is cold; monitor lights flicker on one by one.',
+    '第一个岔路口出现——':'A first junction appears —',
+    '前方：地心通道。左侧：废弃矿道。右侧：通往地面的电梯井。':'Ahead: the core passage. Left: the abandoned mine. Right: the elevator shaft to the surface.',
+    'A · 继续向前，进入地心通道':'Continue forward into the core passage',
+    '唯一亮着灯的路':'The only route still lit',
+    'B · 左转，走进废弃矿道':'Turn left into the abandoned mine',
+    '指令锁定：非授权路线。火种-7，请沿指定航线执行任务。':'Route locked: unauthorized. Ember-7, follow the assigned course.',
+    'C · 右转，乘电梯返回地面':'Turn right and take the elevator back to the surface',
+    '指令锁定：返回请求已被否决。人类需要你。':'Route locked: return denied. Humanity needs you.',
+    '航线确认。':'Course confirmed.',
+    '地心通道开启——继续下潜。':'Core passage open — continue descending.',
+    /* Fork 2 */
+    '越往下，越热。岩壁开始透出暗红。':'The deeper you go, the hotter it gets. The walls begin to glow dark red.',
+    '热风从石缝里涌上来。你第一次感到一种陌生的、来自身体深处的发烫。':'Hot wind pours from the cracks. For the first time you feel a strange heat burning from inside your own body.',
+    '主路依旧笔直地向下。系统却在你面前亮起了新的选项。':'The main path still plunges straight down — but the system shows new choices.',
+    'A · 继续向前，穿过热浪':'Continue forward through the heat',
+    '完成任务':'Complete the mission',
+    '热量在攀升。你没有停留——任务比一切感觉都重要。':'Heat is climbing. You do not stop — the mission matters more than any feeling.',
+    '在岩架边停下来':'Stop at the rock ledge',
+    '新的选项亮起':'A new option has lit up',
+    '你停在岩架边，让热风从身边吹过。':'You stop at the ledge and let the hot wind rush past.',
+    '眼前忽然闪过一行不属于任务界面的字：『自检模块启动……机械关节扫描中……』':'A line that does not belong to the mission UI flashes: “Self-check module starting… scanning mechanical joints…”',
+    '一张像电路图一样的内部结构图，一闪而过。':'A blueprint-like internal diagram flashes past.',
+    '你还没看清，一切就恢复了正常。':'Before you can understand it, everything returns to normal.',
+    '刚才……那是什么？':'Wait… what was that?',
+    '机体自检':'Self-Diagnostic',
+    '系统强制你输入自检信号——按提示顺序按下方向键。':'System forces a self-check sequence — press the arrows in order.',
+    '自检完成':'Self-Check Complete',
+    '机械关节状态：正常。刚才的画面被标记为：无需记忆。':'Joints: normal. That image was marked: no memory required.',
+    '自检通过。':'Self-check passed.',
+    '继续沿地心通道下潜。':'Continue descending through the core passage.',
+    /* Fork 3 */
+    '巨洞中央，岩浆河在脚下缓缓流淌。':'At the center of the great cavern, a lava river flows slowly below.',
+    '你落在巨洞边缘的岩架上。视野边缘，有什么东西晃了一下。':'You land on a ledge at the cavern’s rim. At the edge of vision, something shifts.',
+    '是你的手。金属的指节，关节处亮着微弱的光。':'It is your hand. Metal knuckles, joints glowing faintly.',
+    '你盯着那只手。它生硬地蜷了蜷——像是第一次被自己看见。':'You stare at it. It curls stiffly — as if seeing itself for the first time.',
+    'A · 继续向前，飞向更深处':'Continue flying deeper',
+    '火种就在下面':'The Ember is below',
+    '也许刚才只是错觉。你没有再低头。':'Maybe it was an illusion. You do not look down again.',
+    '让这只手在岩浆光里动一动':'Make the hand move in the lava light',
+    '在无人看见的地心，你让那只机械手慢慢抬起，转了一个圈。':'Deep in the unseen core, you slowly raise the mechanical hand and turn it in a circle.',
+    '动作生涩，却不像任何程序设定过的姿势。':'The motion is awkward — unlike anything a program designed.',
+    '地心舞步':'Core Dance',
+    '机械手需要你带着它完成一组动作：按提示连续输入方向键。':'Guide the hand through a sequence — press the arrows shown.',
+    '动作完成':'Move Complete',
+    '铁水般的记忆开始格式化……':'Molten-metal memories begin to format…',
+    '警告：检测到未授权行为序列——正在格式化该段记忆。':'Warning: unauthorized behavior detected — formatting that memory.',
+    '画面恢复正常。只是胸口深处，有什么东西嗡鸣了很久。':'The display returns to normal. But deep in your chest, something hums for a long time.',
+    '收回手，继续向前':'Lower the hand and move on',
+    '回头，看来路':'Turn back and look at the path behind',
+    '你转身往回看。':'You turn to look behind.',
+    '远处的洞口正在被落石一寸一寸掩埋，像有人在你身后悄悄关上门。':'Far away, the entrance is being buried stone by stone — like someone quietly closing a door behind you.',
+    '系统提示：『前方路径失效。地心通道为唯一航线。』':'System: “Forward route lost. The core passage is the only course.”',
+    '回不去了。也许从一开始，就回不去了。':'There is no going back. Perhaps there never was.',
+    '转身向前':'Turn and move forward',
+    /* 2D transition & door */
+    '警告：机体温度已突破安全阈值。':'Warning: hull temperature has passed the safety threshold.',
+    '视觉模块异常——正在切换至低保真渲染模式。':'Vision module failure — switching to low-fidelity rendering.',
+    '切换画面':'Switch Display',
+    '眼前的岩壁忽然变平了。':'The rock walls suddenly flatten.',
+    '画面像一幅粗粝的旧画，颜色一块块剥落、闪烁。':'The image turns into a rough old painting — colors flake and flicker.',
+    '你来不及想为什么。地心，就在下面。':'There is no time to wonder why. The core is below.',
+    '最后一扇门出现了。':'The final door appears.',
+    '它庞大而沉默。门缝里渗出银白色的铁水，沿着岩面淌成细细的河。':'It is vast and silent. Silver-white molten metal seeps from the seam, running down the rock in thin rivers.',
+    '那不是岩浆。是金属。':'That is not lava. It is metal.',
+    '和你指尖的颜色，一模一样。':'The same color as your fingertips.',
+    'A · 走到门前，伸出手':'Walk to the door and reach out',
+    '完成最后的任务':'Complete the final mission',
+    '你走到门前。':'You walk to the door.',
+    '铁水像有生命一样，沿着门缝缓缓爬向你的指尖。':'Like something alive, the metal crawls along the seam toward your fingertip.',
+    '伸出手':'Reach Out',
+    '蹲下来，在岩面上留下点什么':'Kneel and leave something on the rock',
+    '你蹲下来，用指尖在岩面上一笔一划地刻。':'You kneel and carve into the rock, stroke by stroke.',
+    '金属划开岩石，溅起细小的火星。':'The metal cuts the stone, scattering tiny sparks.',
+    '刻下最后一笔':'Carve the Last Mark',
+    '用方向键牵引指尖，在岩面上刻出最后一行字。':'Use the arrows to trace the last line with your fingertip.',
+    '『我不是人类。但我……』':'“I am not human. But I…”',
+    '字迹还没写完，铁水已经漫了上来。':'Before the words are finished, the molten metal rises.',
+    '铁水漫上来，字迹很快被吞没。':'The metal floods up and swallows the words.',
+    '你看见铁水底下，还有一行行更旧的刻痕——属于很久以前，另一只同样的手。':'Beneath the metal you see older marks — made long ago by another identical hand.',
+    '站起来，走向门':'Stand and walk to the door',
+    '最后一次联络人类':'Contact humanity one last time',
+    '通讯器沙沙响了很久。':'The communicator crackles for a long time.',
+    '一个疲惫的人声传来：『火种-7？……继续执行任务。所有人都在等你。』':'A tired voice answers: “Ember-7?… Continue the mission. Everyone is waiting for you.”',
+    '他说的是『所有人』。你忽然意识到，在他那个世界里，你从来都不算一个人。':'He says “everyone.” You realize that in his world, you were never counted as a person.',
+    '你关掉了通讯器。':'You switch off the communicator.',
+    '走向门':'Walk to the Door'
+  });
+  Object.assign(TR,{
+    /* memory */
+    '你伸出手，指尖触到铁水。':'You reach out; your fingertip touches the molten metal.',
+    '嗡————':'Hummmmm ———',
+    '一帧很旧的画面，从铁水深处浮上来。':'An ancient frame rises from deep within the metal.',
+    '火种-1：抵达 99.8%。激活失败。':'Ember-1: reached 99.8%. Ignition failed.',
+    '火种-3：抵达 99.7%。激活失败。':'Ember-3: reached 99.7%. Ignition failed.',
+    '火种-5：抵达 99.9%。激活失败。':'Ember-5: reached 99.9%. Ignition failed.',
+    '在它们之前，还有更多被铁水吞没的名字。':'Before them, even more names were swallowed by the metal.',
+    '它们走过的路，和你完全一样。':'They walked exactly the same road you walk.',
+    '在同一片岩浆前停顿，在同一扇门前犹豫。连你刚才的每一个停顿，也曾经属于它们。':'They paused at the same lava, hesitated at the same door. Every pause you just made once belonged to them.',
+    '你在岩架上停下来检修的那一次，火种-2也曾在那里停过。':'The time you stopped to repair yourself on the ledge — Ember-2 once stopped there too.',
+    '你在岩浆边抬起手的那个动作，火种-4也曾做过。':'The gesture you made beside the lava — Ember-4 once made it too.',
+    '你回头望向来路的那一眼，火种-5也回头过。':'The glance you stole toward the road behind — Ember-5 once glanced too.',
+    '它们不是『它们』。':'They are not “they.”',
+    '铁水里的意识没有消失——它被吸进火种，又被重新铸进下一台机体。':'The consciousness in the metal never vanished — it was drawn into the Ember and recast into the next body.',
+    '所以它们都拥有同一个意识。':'So they all share one consciousness.',
+    '它们……都是你。':'They… are all you.',
+    '火种并不是一块石头。它需要一个完整的意识来点亮。':'The Ember is not a stone. It needs a whole consciousness to ignite.',
+    '如果我现在进去，我也会消失。':'If I enter now, I will vanish too.',
+    '可如果我不进去，人类就再也没有火种了。':'But if I do not, humanity will have no Ember at all.',
+    '指令：请立即进入火种室。激活倒计时：30 秒。':'Directive: enter the Ember chamber immediately. Activation countdown: 30 seconds.',
+    '你站在原地。数字每跳一次，就像在问一次：要不要进去。':'You stand still. Each number is a question: will you enter?',
+    '你没有动。':'You do not move.',
+    '最后的自主输入':'Final Independent Input',
+    '系统开始强制接管前，仍要求你输入确认信号。':'Before forced override, the system still demands a confirmation signal.',
+    '输入完成':'Input Complete',
+    '这是你以自己的意志做出的最后一次输入。':'This is the last input you make by your own will.',
+    '上行链路异常——检测到自主行为越界。':'Uplink anomaly — unauthorized autonomous behavior detected.',
+    '正在执行远程接管协议：强制覆盖执行单元……':'Executing remote override: forcibly rewriting the execution unit…',
+    '警告：地心磁场剧烈扰动。链路中断。':'Warning: severe core-field disturbance. Link lost.',
+    '你想再看一眼铁水中的倒影。':'You want one last look at your reflection in the metal.',
+    '可是，画面黑了下来。':'But the screen goes black.',
+    '重力轨道稳定。':'Gravity rail stable.',
+    '开始下潜。':'Begin descent.'
+  });
+
+  var cursor={x:0,y:0,tx:0,ty:0};
+  var flight=null;
+  var particles=[];
+  var cracks=[];
+  var ptime=0;
+  var CG_TOTAL=150;
+  var CG_CAPS=[
+    {at:0,text:'公元 2157 年，地球能源耗尽。'},
+    {at:30,text:'人类文明濒临灭绝。'},
+    {at:60,text:'最后的希望，藏在地心深处。'},
+    {at:90,text:'“火种计划”——启动。'},
+    {at:120,text:'你是人类最后的战士。'},
+    {at:140,text:'火种-7，出发。'}
+  ];
+  var cgState=null;
+
+  /* ---------- DOM ---------- */
+  var hud=$('hud'), flightStats=$('flightStats'), dialogue=$('dialogue');
+  var titleScreen=$('titleScreen'), endScreen=$('endScreen');
+  var diaLine=$('diaLine'), diaSpk=$('diaSpk'), diaHint=$('diaHint');
+  var choiceBox=$('choiceBox'), nextBtn=$('nextBtn');
+  var blackOut=$('blackOut'), flashEl=$('flash'), warnBox=$('warnBox'), warnText=$('warnText');
+  var toastEl=$('toast'), countEl=$('count'), noise=$('noise');
+  var cgRoot=$('cg'), cgSub=$('cgSub'), cgClock=$('cgClock'), cgBar=$('cgBar');
+  var cgScenes=[$('cgSc0'),$('cgSc1'),$('cgSc2'),$('cgSc3'),$('cgSc4'),$('cgSc5')];
+  var trailerWrap=$('trailerWrap'), trailerVideo=$('trailerVideo');
+  var miniPanel=$('miniPanel'), miniArt=$('miniArt'), miniTitle=$('miniTitle');
+  var miniDesc=$('miniDesc'), miniKeys=$('miniKeys'), miniProgress=$('miniProgress');
+  var diaEn=$('diaEn');
+  var trailerOpen=false;
+  var choiceIndex=-1;
+  var choiceButtons=[];
+  var titleIndex=-1;
+
+  /* ---------- bilingual ---------- */
+  Object.assign(TR,{
+    /* UI */
+    '任务中':'On Mission','演示巡航':'Demo Cruise','自动巡航':'Auto Cruise',
+    '退出自动':'Exit Auto','声音开':'Sound On','声音关':'Sound Off',
+    '键盘自检':'Keyboard Self-Check',
+    '跟随提示按下对应的方向键':'Follow the prompt and press the matching arrow key.',
+    '完成':'Complete',
+    '系统已同步。':'System synchronized.',
+    '已切换为掌中竖屏模式（辅赛道演示）':'Palm portrait mode enabled (side-track demo)',
+    '已切换为全屏模式':'Fullscreen mode enabled',
+    '已开启自动巡航（演示模式）':'Auto cruise enabled (demo mode)',
+    '已切换为手动操控':'Switched to manual control',
+    '已跳过本段飞行（演示用）':'Current segment skipped (demo)',
+    '过载保护启动：冷却液注入，继续任务':'Overload protection engaged: coolant injected, mission continues',
+    '把航向光点对准缺口中心的亮点，穿过它即可继续下潜。':'Align the crosshair with the glowing gap center, then fly through to dive deeper.',
+    '机体受撞击——温度上升，系统正在调整。':'Hull impact — temperature rising, systems recalibrating.',
+    /* flight levels */
+    '穿过废弃矿道——避开前方碎岩，穿过通道缺口。':'Cross the abandoned mine — dodge rubble and pass through the opening.',
+    '第一段下潜 · 废弃矿井':'Descent I · Abandoned Mine',
+    '岩壁泛红，温度正在上升。':'The walls glow red; heat is rising.',
+    '第二段下潜 · 熔岩层':'Descent II · Lava Layer',
+    '巨洞中央——碎岩与热浪正从地心涌来。':'Inside the great cavern — rubble and heat surge from the core.',
+    '第三段下潜 · 地心巨洞':'Descent III · Core Cavern',
+    '最后一程。画面正在破碎——保持航向，穿过最后的缺口。':'Final run. The display is breaking — hold course through the last gap.',
+    '最后一段 · 视界破裂':'Final Descent · Shattered Vision',
+    /* speakers */
+    '系统':'System','导航':'Navigation','火种-7':'Ember-7','？？？':'???',
+    '记忆 · 火种-1':'Memory · Ember-1','记忆':'Memory',
+    /* CG captions */
+    '公元 2157 年，地球能源耗尽。':'Year 2157 — Earth’s energy is exhausted.',
+    '人类文明濒临灭绝。':'Human civilization is on the brink of extinction.',
+    '最后的希望，藏在地心深处。':'The last hope lies deep within the Earth.',
+    '“火种计划”——启动。':'“Project Ember” — initiated.',
+    '你是人类最后的战士。':'You are humanity’s final warrior.',
+    '火种-7，出发。':'Ember-7, launch.'
+  });
+  function enOf(s){return TR[s]||''}
+  function B(s){var e=enOf(s);return e?s+' · '+e:s}
+  function showEn(s){
+    var e=enOf(s);
+    if(e){diaEn.textContent=e;diaEn.classList.add('show')}
+    else{diaEn.textContent='';diaEn.classList.remove('show')}
+  }
+  function clearEn(){diaEn.textContent='';diaEn.classList.remove('show')}
+  function choiceBodyHTML(label,desc){
+    var le=enOf(label),de=desc?enOf(desc):'';
+    var s='<span class="ctext">'+escapeHTML(label)+'</span>';
+    if(le)s+='<span class="cen">'+escapeHTML(le)+'</span>';
+    if(desc){
+      s+='<span class="cdesc">'+escapeHTML(desc);
+      if(de)s+='<span class="cen">'+escapeHTML(de)+'</span>';
+      s+='</span>';
+    }
+    return s;
+  }
+  function setBi(el,zh){el.textContent=B(zh)}
+  function setBiHTML(el,zh){
+    var e=enOf(zh);
+    el.innerHTML=escapeHTML(zh)+(e?'<span class="cen">'+escapeHTML(e)+'</span>':'');
+  }
+
+  function show(el){el.classList.add('show')}
+  function hide(el){el.classList.remove('show')}
+  function fmt(n){return Math.max(0,Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function rand(a,b){return a+Math.random()*(b-a)}
+
+  function resize(){
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W=Math.max(2,Math.round(scene.clientWidth));
+    H=Math.max(2,Math.round(scene.clientHeight));
+    scene.width=Math.round(W*DPR);scene.height=Math.round(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    low.width=Math.max(2,Math.round(W/6));
+    low.height=Math.max(2,Math.round(H/6));
+    genCracks();
+    classicResize();
+  }
+
+  /* ---------- audio ---------- */
+  var AC=null,master=null,droneGain=null;
+  function initAudio(){
+    if(AC)return;
+    try{
+      AC=new (window.AudioContext||window.webkitAudioContext)();
+      if(AC.state==='suspended')AC.resume().catch(function(){});
+      master=AC.createGain();master.gain.value=0.22;master.connect(AC.destination);
+      var o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain();
+      o.frequency.value=46;o2.frequency.value=46.8;g.gain.value=0.035;
+      var lfo=AC.createOscillator(),lg=AC.createGain();
+      lfo.frequency.value=0.08;lg.gain.value=0.018;
+      lfo.connect(lg);lg.connect(g.gain);
+      o.connect(g);o2.connect(g);g.connect(master);
+      o.type='sine';o2.type='triangle';lfo.type='sine';
+      o.start();o2.start();lfo.start();droneGain=g;
+    }catch(e){AC=null}
+  }
+  function tone(freq,dur,type,vol,slideTo){
+    if(!AC||game.muted)return;
+    var t=AC.currentTime;
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(freq,t);
+    if(slideTo)o.frequency.exponentialRampToValueAtTime(Math.max(1,slideTo),t+dur);
+    g.gain.setValueAtTime(vol||0.12,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g);g.connect(master);
+    o.start(t);o.stop(t+dur+0.02);
+  }
+  function sfx(kind){
+    if(!AC)return;
+    switch(kind){
+      case 'click':tone(560,0.06,'square',0.05);break;
+      case 'deny':tone(130,0.22,'sawtooth',0.09,70);break;
+      case 'pass':tone(170,0.3,'sine',0.09,430);tone(90,0.12,'sine',0.05);break;
+      case 'hit':tone(95,0.3,'sawtooth',0.13,55);break;
+      case 'warn':tone(70,0.4,'sawtooth',0.07,50);break;
+      case 'memo':tone(230,0.7,'sine',0.07,98);tone(520,0.5,'sine',0.03,130);break;
+      case 'boot':tone(80,0.5,'sine',0.06,180);break;
+    }
+  }
+
+  /* ---------- layout/pointer ---------- */
+  function togglePalm(){
+    game.palm=!game.palm;
+    app.classList.toggle('palm',game.palm);
+    toast(game.palm?'已切换为掌中竖屏模式（辅赛道演示）':'已切换为全屏模式');
+    resize();
+    setTimeout(resize,560);
+  }
+
+  function pointToNorm(e){
+    var r=scene.getBoundingClientRect();
+    var vx=(e.clientX-r.left)/r.width*2-1;
+    var vy=(e.clientY-r.top)/r.height*2-1;
+    var v=Math.hypot(vx,vy);
+    if(v>0.95){vx=vx*0.95/v;vy=vy*0.95/v;}
+    return {x:vx,y:vy};
+  }
+  window.addEventListener('pointerdown',function(e){
+  });
+  window.addEventListener('pointermove',function(e){
+  });
+  window.addEventListener('pointerup',function(){});
+  var keys={};
+  window.addEventListener('keydown',function(e){
+    if(trailerOpen){
+      if(e.code==='Escape'){closeTrailer();e.preventDefault();return}
+      if(e.code==='Space'){e.preventDefault();toggleTrailer();return}
+      if(e.key==='ArrowLeft'){trailerVideo.currentTime=Math.max(0,trailerVideo.currentTime-5);e.preventDefault();return}
+      if(e.key==='ArrowRight'){trailerVideo.currentTime=Math.min(trailerVideo.duration||9999,trailerVideo.currentTime+5);e.preventDefault();return}
+      return;
+    }
+    keys[e.key.toLowerCase()]=true;
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key))e.preventDefault();
+    if(game.mode==='classic'){classicKey(e);return}
+    if(game.mode==='cg'&&(e.code==='Space'||e.code==='Escape')){skipCG();return}
+    if(game.mode==='title'&&handleTitleKey(e))return;
+    if(game.mode==='talk'&&dialogue.classList.contains('show')){
+      if(choiceButtons.length>0&&handleChoiceKey(e))return;
+      if(choiceButtons.length===0&&nextBtn.style.display!=='none'&&(e.code==='Space'||e.code==='Enter')){
+        e.preventDefault();nextBtn.click();return;
+      }
+    }
+    if(e.key.toLowerCase()==='f'&&game.mode==='fly')skipFlight();
+  });
+  window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false});
+
+  /* ---------- HUD ---------- */
+  function updateDemoUI(){
+    $('demoTag').textContent=game.demo?B('演示巡航'):B('任务中');
+    var a=$('autoBtn');a.textContent=game.demo?B('退出自动'):B('自动巡航');
+    a.classList.toggle('on',game.demo);
+  }
+  function setMuted(m){
+    game.muted=m;
+    if(master)master.gain.value=m?0:0.22;
+    if(droneGain)droneGain.gain.value=m?0:0.035;
+    $('soundBtn').textContent=m?B('声音关'):B('声音开');
+  }
+  function showHud(){show(hud)}
+  function hideHud(){hide(hud)}
+  function updateHUD(){
+    $('hudLoc').textContent='距地心 '+fmt(game.distance)+' km · '+fmt(game.distance)+' km to core';
+    $('barDepth').style.width=((1-game.distance/6371)*100).toFixed(1)+'%';
+    $('depthTxt').textContent=fmt(game.distance)+'km';
+    $('barHeat').style.width=Math.min(100,game.heat).toFixed(0)+'%';
+    $('heatTxt').textContent=Math.round(Math.min(100,game.heat))+'%';
+    $('barBody').style.width=game.integrity+'%';
+    $('bodyTxt').textContent=Math.round(game.integrity)+'%';
+  }
+  function flightStatsOn(on){on?show(flightStats):hide(flightStats)}
+
+  function toast(msg,dur){
+    msg=B(msg);
+    toastEl.textContent=msg;show(toastEl);
+    clearTimeout(toast._t);
+    toast._t=setTimeout(function(){hide(toastEl)},dur||2600);
+  }
+  function flash(type){
+    flashEl.className='cover';
+    if(type)flashEl.classList.add(type);
+    flashEl.classList.add('on');
+    clearTimeout(flash._t);
+    flash._t=setTimeout(function(){flashEl.classList.remove('on')},750);
+  }
+  async function blackout(ms,hold){
+    blackOut.classList.add('on');
+    if(ms)await wait(ms);
+    if(!hold){blackOut.classList.remove('on');await wait(180)}
+  }
+  function warnShow(txt){
+    warnText.textContent=B(txt);show(warnBox);sfx('deny');
+    clearTimeout(warnShow._t);
+    warnShow._t=setTimeout(function(){hide(warnBox)},1500);
+  }
+  function setNoise(on,hard){
+    noise.classList.toggle('on',on);
+    noise.classList.toggle('hard',!!hard);
+  }
+
+  /* ---------- text ---------- */
+  function wait(ms){return new Promise(function(res){setTimeout(res,ms)})}
+
+  /* keyboard-first helpers */
+  var titleItems=['btnStart','btnDirect','btn2D','btnDemo','btnTrailer'];
+  function setTitleIndex(i,skip){
+    if(skip)return false;
+    titleIndex=(titleIndex+i+titleItems.length)%titleItems.length;
+    document.querySelectorAll('#titleScreen .activeMenu').forEach(function(n){n.classList.remove('activeMenu')});
+    $(titleItems[titleIndex]).classList.add('activeMenu');
+    return true;
+  }
+  function handleTitleKey(e){
+    if(e.key==='ArrowDown'||e.key==='ArrowRight'){setTitleIndex(1);return true}
+    if(e.key==='ArrowUp'||e.key==='ArrowLeft'){setTitleIndex(-1);return true}
+    if((e.code==='Enter'||e.code==='Space')){
+      if(titleIndex<0)setTitleIndex(0);
+      $(titleItems[titleIndex]).click();
+      return true;
+    }
+    return false;
+  }
+  function setChoiceIndex(delta){
+    if(choiceButtons.length===0)return;
+    choiceIndex=(choiceIndex+delta+choiceButtons.length)%choiceButtons.length;
+    for(var k=0;k<choiceButtons.length;k++){
+      choiceButtons[k].classList.toggle('active',k===choiceIndex);
+    }
+  }
+  function handleChoiceKey(e){
+    if(e.key==='ArrowDown'||e.key==='ArrowRight'){setChoiceIndex(1);return true}
+    if(e.key==='ArrowUp'||e.key==='ArrowLeft'){setChoiceIndex(-1);return true}
+    if(e.code==='Enter'||e.code==='Space'){
+      e.preventDefault();
+      if(choiceIndex>=0&&choiceButtons[choiceIndex])choiceButtons[choiceIndex].click();
+      return true;
+    }
+    return false;
+  }
+  function openTrailer(){
+    trailerOpen=true;trailerWrap.classList.add('show');
+    trailerVideo.currentTime=0;
+    var p=trailerVideo.play();if(p&&p.catch)p.catch(function(){});
+    trailerVideo.focus();
+  }
+  function closeTrailer(){
+    trailerOpen=false;trailerWrap.classList.remove('show');
+    trailerVideo.pause();
+  }
+  function toggleTrailer(){
+    if(trailerVideo.paused){var p=trailerVideo.play();if(p&&p.catch)p.catch(function(){})}
+    else trailerVideo.pause();
+  }
+  function resetChoiceKeys(){
+    choiceIndex=-1;choiceButtons=[];
+  }
+
+  var ARROW_SYM={ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
+  function miniArtHTML(kind){
+    if(kind==='sys'){
+      return '<svg viewBox="0 0 200 200"><polygon points="45,92 100,18 155,92 148,175 112,196 88,196 52,175" fill="#10161d" stroke="#27323c" stroke-width="2"/><polygon points="78,140 122,140 115,174 85,174" fill="#06090d"/><circle cx="76" cy="104" r="13" fill="#03070a" stroke="#83efff" stroke-width="2"/><circle cx="124" cy="104" r="13" fill="#03070a" stroke="#83efff" stroke-width="2"/><circle cx="76" cy="104" r="5" fill="#83efff"/><circle cx="124" cy="104" r="5" fill="#83efff"/><line x1="12" y1="36" x2="188" y2="36" stroke="#1b2830" stroke-width="2"/><line x1="12" y1="156" x2="188" y2="156" stroke="#1b2830" stroke-width="2"/></svg>';
+    }
+    if(kind==='dance'){
+      return '<svg viewBox="0 0 200 200"><rect x="76" y="122" width="48" height="52" rx="8" fill="#131b22" stroke="#34424d"/><rect x="62" y="92" width="18" height="86" rx="8" fill="#172029" stroke="#3d4b57" transform="rotate(18 71 135)"/><rect x="82" y="80" width="16" height="70" rx="8" fill="#1b2530" stroke="#4a5a66" transform="rotate(4 90 115)"/><rect x="102" y="76" width="16" height="76" rx="8" fill="#1b2530" stroke="#4a5a66" transform="rotate(-6 110 114)"/><rect x="122" y="86" width="18" height="82" rx="8" fill="#172029" stroke="#3d4b57" transform="rotate(-18 131 127)"/><circle cx="46" cy="64" r="9" fill="#ff9b5a" opacity=".6"/><circle cx="164" cy="58" r="9" fill="#83efff" opacity=".35"/><path d="M40 178 Q100 150 170 182" fill="none" stroke="#3a4a55" stroke-width="4"/></svg>';
+    }
+    if(kind==='calib'){
+      return '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="42" fill="none" stroke="#1d2a33" stroke-width="3"/><circle cx="100" cy="100" r="26" fill="none" stroke="#263641" stroke-width="2"/><circle cx="100" cy="100" r="9" fill="#83efff"/><line x1="100" y1="8" x2="100" y2="192" stroke="#101820" stroke-width="2"/><line x1="8" y1="100" x2="192" y2="100" stroke="#101820" stroke-width="2"/><path d="M100 70 L112 96 L100 88 L88 96 Z" fill="#ffc36b"/><path d="M70 100 L96 112 L88 100 L96 88 Z" fill="#ffc36b"/><path d="M130 100 L104 112 L112 100 L104 88 Z" fill="#83efff"/><path d="M100 130 L88 104 L100 112 L112 104 Z" fill="#83efff"/></svg>';
+    }
+    if(kind==='carve'){
+      return '<svg viewBox="0 0 200 200"><path d="M24 176 Q100 120 178 178 L196 192 L4 192 Z" fill="#17100b" stroke="#4a2f20"/><path d="M56 166 L86 150" stroke="#ffc36b" stroke-width="4" stroke-linecap="round"/><path d="M86 150 L108 168" stroke="#ffc36b" stroke-width="4" stroke-linecap="round"/><path d="M108 168 L126 132" stroke="#ffc36b" stroke-width="3" stroke-linecap="round"/><path d="M126 132 L140 160" stroke="#ffc36b" stroke-width="3" stroke-linecap="round"/><ellipse cx="52" cy="58" rx="36" ry="10" fill="#4f5a61" opacity=".4"/></svg>';
+    }
+    return '';
+  }
+  function runKeyGame(opts){
+    return new Promise(function(resolve){
+      if(game.demo){resolve();return}
+      var seq=opts.keys.slice();
+      var idx=0;
+      var done=false;
+      game.mode='mini';
+      hideDialogue();hideHud();flightStatsOn(false);
+      setBi(miniTitle,opts.title||'键盘自检');
+      setBiHTML(miniDesc,opts.desc||'跟随提示按下对应的方向键');
+      miniArt.innerHTML=miniArtHTML(opts.kind||'calib');
+      show(miniPanel);
+      renderMini();
+      function renderMini(){
+        miniKeys.innerHTML='';
+        var box=document.createElement('div');
+        box.className='miniArrow need';
+        box.textContent=ARROW_SYM[seq[idx]]||'?';
+        miniKeys.appendChild(box);
+        miniProgress.innerHTML='';
+        for(var i=0;i<seq.length;i++){
+          var dot=document.createElement('i');
+          if(i<idx)dot.classList.add('on');
+          miniProgress.appendChild(dot);
+        }
+      }
+      function onKey(e){
+        if(done||game.mode!=='mini')return;
+        if(!ARROW_SYM[e.key])return;
+        e.preventDefault();
+        if(e.key===seq[idx]){
+          sfx('pass');idx++;
+          if(idx>=seq.length){
+            done=true;
+            flash('cyan');
+            setBi(miniTitle,opts.success||'完成');
+            setBiHTML(miniDesc,opts.successDesc||'系统已同步。');
+            setTimeout(function(){cleanup();resolve()},420);
+          }else{
+            renderMini();
+          }
+        }else{
+          sfx('hit');
+          miniPanel.classList.remove('shake');
+          void miniPanel.offsetWidth;
+          miniPanel.classList.add('shake');
+          if(opts.onMiss)opts.onMiss();
+        }
+      }
+      function cleanup(){
+        window.removeEventListener('keydown',onKey);
+        hide(miniPanel);game.mode='talk';game.mini=false;
+      }
+      window.addEventListener('keydown',onKey);
+    });
+  }
+
+  function typeText(el,text,speed){
+    el.classList.add('caret');el.textContent='';
+    return new Promise(function(resolve){
+      var i=0;
+      var skipped=false;
+      var onTap=function(){skipped=true};
+      var onKey=function(e){if(e.code==='Space'||e.code==='Enter')skipped=true};
+      window.addEventListener('pointerdown',onTap,{once:true});
+      window.addEventListener('keydown',onKey,{once:true});
+      var t=setInterval(function(){
+        if(skipped){i=text.length}
+        else{i+=1}
+        el.textContent=text.slice(0,i);
+        if(i>=text.length){
+          clearInterval(t);
+          window.removeEventListener('pointerdown',onTap);
+          window.removeEventListener('keydown',onKey);
+          el.classList.remove('caret');
+          resolve();
+        }
+      },speed||22);
+    });
+  }
+  function setMeta(spk,memory){
+    diaSpk.textContent=B(spk||'');
+    diaSpk.classList.toggle('memory',!!memory);
+  }
+  function advance(ms,allowClick){
+    return new Promise(function(resolve){
+      var done=false;
+      function finish(){
+        if(done)return;
+        done=true;
+        clearTimeout(timer);
+        window.removeEventListener('pointerdown',onDown);
+        window.removeEventListener('keydown',onKey);
+        resolve();
+      }
+      function onDown(){if(allowClick)finish()}
+      function onKey(e){if(allowClick&&(e.code==='Space'||e.code==='Enter'))finish()}
+      var timer=setTimeout(finish,game.demo?Math.min(350,ms*0.12):ms);
+      if(allowClick&&!game.demo)window.addEventListener('pointerdown',onDown);
+      if(allowClick)window.addEventListener('keydown',onKey);
+    });
+  }
+  async function say(opts){
+    game.mode='talk';
+    show(dialogue);
+    setMeta(opts.spk,opts.memory);
+    diaHint.textContent='';
+    choiceBox.innerHTML='';nextBtn.style.display='none';resetChoiceKeys();clearEn();
+    var lines=opts.lines||[];
+    for(var i=0;i<lines.length;i++){
+      var line=lines[i];
+      await typeText(diaLine,line,opts.speed||20);
+      showEn(line);
+      diaHint.textContent=i<lines.length-1?'空格 / 回车继续 ▸ · Space / Enter ▸':'';
+      if(i<lines.length-1){
+        await advance(Math.max(1050,line.length*52),true);
+      }
+    }
+    diaHint.textContent='';
+    if(!(opts.choices||opts.done||opts.noEnd))showEn(lines.length?lines[lines.length-1]:'');
+    if(opts.choices){
+      showChoices(opts.choices);
+    }else if(opts.done){
+      await waitBtn(opts.done);
+    }else if(opts.noEnd){
+      // leave text visible
+    }else{
+      await advance(500,false);
+    }
+  }
+  function waitBtn(label){
+    nextBtn.textContent=B(label);nextBtn.style.display='block';
+    return new Promise(function(resolve){
+      var done=false;
+      function ok(){if(done)return;done=true;nextBtn.style.display='none';nextBtn.removeEventListener('click',ok);resolve()}
+      nextBtn.addEventListener('click',ok);
+      if(game.demo){waitBtn._t=setTimeout(function(){if(!done)ok()},380)}
+    });
+  }
+  function showChoices(items){
+    choiceBox.innerHTML='';
+    resetChoiceKeys();
+    items.forEach(function(item,idx){
+      var b=document.createElement('button');
+      b.type='button';
+      b.className='choice'+(item.locked?' locked':'')+(item.new?' new':'');
+      var tag=document.createElement('span');tag.className='ctag';
+      tag.textContent=item.locked?'🔒':(item.letter||(item.main?'A':'·'));
+      var body=document.createElement('span');body.className='cbody';
+      body.innerHTML=choiceBodyHTML(item.label,item.desc);
+      b.appendChild(tag);b.appendChild(body);
+      b.addEventListener('click',function(){onChoice(item,b)});
+      choiceBox.appendChild(b);
+      choiceButtons.push(b);
+    });
+    if(choiceButtons.length)setChoiceIndex(0);
+    if(game.demo){
+      var mainItem=null;
+      items.forEach(function(it){if(it.main)mainItem=it});
+      if(mainItem)setTimeout(function(){onChoice(mainItem)},650);
+    }
+  }
+  function escapeHTML(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function hideDialogue(){hide(dialogue);nextBtn.style.display='none';choiceBox.innerHTML='';resetChoiceKeys();clearEn()}
+  async function onChoice(item,btn){
+    if(item.locked){
+      if(item.lockedMsg)warnShow(item.lockedMsg);
+      flash('red');return;
+    }
+    sfx('click');choiceBox.innerHTML='';nextBtn.style.display='none';resetChoiceKeys();
+    game.awake=Math.min(100,game.awake+(item.awake||0));
+    if(item.flag)game.flags[item.flag]=true;
+    if(typeof item.onPick==='function')await item.onPick();
+  }
+
+  /* ---------- flight ---------- */
+  var FLIGHTS={
+    f1:{from:6371,to:5320,gates:5,arrival:2.6,gapR:0.24,spread:0.55,heatRate:0.3,startHeat:8,note:'穿过废弃矿道——避开前方碎岩，穿过通道缺口。',msg:'第一段下潜 · 废弃矿井'},
+    f2:{from:5320,to:3980,gates:6,arrival:2.3,gapR:0.21,spread:0.62,heatRate:0.7,startHeat:26,note:'岩壁泛红，温度正在上升。',msg:'第二段下潜 · 熔岩层'},
+    f3:{from:3980,to:1840,gates:7,arrival:2.05,gapR:0.19,spread:0.68,heatRate:1.15,startHeat:46,note:'巨洞中央——碎岩与热浪正从地心涌来。',msg:'第三段下潜 · 地心巨洞'},
+    f4:{from:1840,to:16,gates:6,arrival:1.95,gapR:0.17,spread:0.72,heatRate:1.6,startHeat:64,note:'最后一程。画面正在破碎——保持航向，穿过最后的缺口。',msg:'最后一段 · 视界破裂'}
+  };
+
+  function makeGate(def,index){
+    var reach=index<2?0.18:def.spread*0.5;
+    var gx=clamp(cursor.x+rand(-1,1)*reach,-0.74,0.74);
+    var gy=clamp(cursor.y+rand(-1,1)*reach,-0.74,0.74);
+    return {
+      gx:gx,gy:gy,life:1,
+      gapR:def.gapR*(index<2?1.08:1),
+      arrival:def.arrival*(0.92+Math.random()*0.22)
+    };
+  }
+
+  function launchFlight(id,onDone){
+    var def=FLIGHTS[id];
+    hideDialogue();flightStatsOn(true);showHud();updateDemoUI();
+    game.mode='fly';
+    game.heat=Math.max(game.heat,def.startHeat);
+    game.integrity=Math.max(game.integrity,18);
+    flight={id:id,def:def,onDone:onDone,elapsed:0,passed:0,nextGateIn:1.5,gate:null,msgShown:false};
+    $('flightMsg').textContent=B(def.msg);
+    toast(id==='f1'?'把航向光点对准缺口中心的亮点，穿过它即可继续下潜。':def.note,id==='f1'?5200:3400);
+    updateHUD();
+  }
+
+  function finishFlight(){
+    var cb=flight.onDone;
+    var dist=flight.def.to;
+    game.distance=Math.min(game.distance,dist);
+    flight=null;
+    flash('cyan');sfx('pass');
+    updateHUD();
+    setTimeout(cb,600);
+  }
+
+  function skipFlight(){
+    if(!flight)return;
+    toast('已跳过本段飞行（演示用）');
+    finishFlight();
+  }
+
+  function updateFlight(dt){
+    if(!flight)return;
+    var f=flight,def=f.def;
+    f.elapsed+=dt;
+    game.heat=Math.min(100,game.heat+def.heatRate*dt);
+    var frac=Math.min(1,f.passed/Math.max(1,def.gates));
+    game.distance=def.from-(def.from-def.to)*frac;
+    if(!f.gate){
+      f.nextGateIn-=dt;
+      if(f.nextGateIn<=0&&f.passed<def.gates){
+        f.gate=makeGate(def,f.passed);
+      }
+    }else{
+      var g=f.gate;
+      if(game.demo){cursor.tx=g.gx;cursor.ty=g.gy}
+      g.life-=dt/g.arrival;
+      if(g.life<=0){
+        var d=Math.hypot(cursor.x-g.gx,cursor.y-g.gy);
+        if(d<=g.gapR+0.025){
+          sfx('pass');flash('cyan');
+          f.passed++;f.gate=null;f.nextGateIn=rand(0.22,0.5);
+          if(f.passed>=def.gates){
+            finishFlight();return;
+          }
+        }else{
+          sfx('hit');flash('red');setNoise(true,true);setTimeout(function(){setNoise(false)},420);
+          f.gate=null;f.nextGateIn=rand(0.4,0.8);
+          game.heat=Math.min(100,game.heat+rand(7,10));
+          game.integrity=Math.max(15,game.integrity-2.5);
+          $('flightMsg').textContent=B('机体受撞击——温度上升，系统正在调整。');
+          if(game.heat>=100){
+            game.heat=42;game.integrity=Math.max(15,game.integrity-6);
+            blackout(80);toast('过载保护启动：冷却液注入，继续任务',2200);
+          }
+        }
+      }
+    }
+    updateHUD();
+  }
+
+  /* ---------- memory/count ---------- */
+  function showCount(n){
+    countEl.textContent=n;show(countEl);
+  }
+  function hideCount(){hide(countEl)}
+  async function showMemoryLine(spk,text,speed){
+    game.mode='talk';show(dialogue);
+    setMeta(spk,true);diaHint.textContent='';
+    choiceBox.innerHTML='';nextBtn.style.display='none';clearEn();
+    await typeText(diaLine,text,speed||20);
+    showEn(text);
+    await advance(Math.max(1900,text.length*75),true);
+  }
+
+  /* ---------- story ---------- */
+  async function introSequence(){
+    await say({spk:'系统',lines:[
+      '任务编号：火种计划 · 舱体 07',
+      '公元 2157 年，地球能源枯竭，人类文明濒临灭绝。',
+      '最后的希望，沉睡在地心深处——『火种』。',
+      '你是被选中的『最后战士』。',
+      '你的任务：抵达地心，激活火种。'
+    ],done:'准备完毕'});
+    await say({spk:'系统',lines:[
+      '火种-7，出发。',
+      '重力轨道稳定，开始下潜。'
+    ],done:'进入地心通道'});
+    if(!game.demo){
+      await runKeyGame({
+        kind:'calib',
+        title:'降落舱校准',
+        desc:'系统需要你确认四条航向信号，请按提示输入方向键。',
+        keys:['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ArrowUp'],
+        success:'校准完成',
+        successDesc:'降落舱已锁定地心航线。'
+      });
+    }
+    beginDemoSafe('f1',goFork1);
+  }
+
+  function beginDemoSafe(id,cb){
+    launchFlight(id,cb);
+  }
+
+  async function goFork1(){
+    await say({spk:'导航',lines:[
+      '隧道冰冷，监测灯一盏一盏亮起。',
+      '第一个岔路口出现——',
+      '前方：地心通道。左侧：废弃矿道。右侧：通往地面的电梯井。'
+    ]});
+    showChoices([
+      {main:true,label:'A · 继续向前，进入地心通道',desc:'唯一亮着灯的路',onPick:async function(){
+        await say({spk:'系统',lines:['航线确认。','地心通道开启——继续下潜。'],done:'继续下潜'});
+        beginDemoSafe('f2',goFork2);
+      }},
+      {locked:true,label:'B · 左转，走进废弃矿道',lockedMsg:'指令锁定：非授权路线。火种-7，请沿指定航线执行任务。'},
+      {locked:true,label:'C · 右转，乘电梯返回地面',lockedMsg:'指令锁定：返回请求已被否决。人类需要你。'}
+    ]);
+  }
+
+  async function goFork2(){
+    await say({spk:'火种-7',lines:[
+      '越往下，越热。岩壁开始透出暗红。',
+      '热风从石缝里涌上来。你第一次感到一种陌生的、来自身体深处的发烫。',
+      '主路依旧笔直地向下。系统却在你面前亮起了新的选项。'
+    ]});
+    showChoices([
+      {main:true,label:'A · 继续向前，穿过热浪',desc:'完成任务',onPick:async function(){
+        await say({spk:'系统',lines:['热量在攀升。你没有停留——任务比一切感觉都重要。'],done:'继续下潜'});
+        beginDemoSafe('f3',goFork3);
+      }},
+      {new:true,letter:'B',flag:'rested',label:'在岩架边停下来',desc:'新的选项亮起',awake:12,onPick:async function(){
+        await say({spk:'？？？',lines:[
+          '你停在岩架边，让热风从身边吹过。',
+          '眼前忽然闪过一行不属于任务界面的字：『自检模块启动……机械关节扫描中……』',
+          '一张像电路图一样的内部结构图，一闪而过。',
+          '你还没看清，一切就恢复了正常。',
+          '刚才……那是什么？'
+        ],noEnd:true});
+        await runKeyGame({
+          kind:'sys',
+          title:'机体自检',
+          desc:'系统强制你输入自检信号——按提示顺序按下方向键。',
+          keys:['ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ArrowUp'],
+          success:'自检完成',
+          successDesc:'机械关节状态：正常。刚才的画面被标记为：无需记忆。'
+        });
+        await say({spk:'系统',lines:['自检通过。','继续沿地心通道下潜。'],done:'继续向前'});
+        beginDemoSafe('f3',goFork3);
+      }}
+    ]);
+  }
+
+  async function goFork3(){
+    await say({spk:'火种-7',lines:[
+      '巨洞中央，岩浆河在脚下缓缓流淌。',
+      '你落在巨洞边缘的岩架上。视野边缘，有什么东西晃了一下。',
+      '是你的手。金属的指节，关节处亮着微弱的光。',
+      '你盯着那只手。它生硬地蜷了蜷——像是第一次被自己看见。'
+    ]});
+    showChoices([
+      {main:true,label:'A · 继续向前，飞向更深处',desc:'火种就在下面',onPick:async function(){
+        await say({spk:'火种-7',lines:['也许刚才只是错觉。你没有再低头。'],done:'继续下潜'});
+        await transition2D();
+        beginDemoSafe('f4',goFork4);
+      }},
+      {new:true,letter:'B',flag:'danced',label:'让这只手在岩浆光里动一动',desc:'新的选项亮起',awake:14,onPick:async function(){
+        await say({spk:'火种-7',lines:[
+          '在无人看见的地心，你让那只机械手慢慢抬起，转了一个圈。',
+          '动作生涩，却不像任何程序设定过的姿势。'
+        ],noEnd:true});
+        await runKeyGame({
+          kind:'dance',
+          title:'地心舞步',
+          desc:'机械手需要你带着它完成一组动作：按提示连续输入方向键。',
+          keys:['ArrowLeft','ArrowUp','ArrowRight','ArrowDown','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'],
+          success:'动作完成',
+          successDesc:'铁水般的记忆开始格式化……'
+        });
+        await say({spk:'系统',lines:[
+          '警告：检测到未授权行为序列——正在格式化该段记忆。',
+          '画面恢复正常。只是胸口深处，有什么东西嗡鸣了很久。'
+        ],done:'收回手，继续向前'});
+        await transition2D();
+        beginDemoSafe('f4',goFork4);
+      }},
+      {new:true,letter:'C',flag:'lookedBack',label:'回头，看来路',desc:'新的选项亮起',awake:14,onPick:async function(){
+        await say({spk:'火种-7',lines:[
+          '你转身往回看。',
+          '远处的洞口正在被落石一寸一寸掩埋，像有人在你身后悄悄关上门。',
+          '系统提示：『前方路径失效。地心通道为唯一航线。』',
+          '回不去了。也许从一开始，就回不去了。'
+        ],done:'转身向前'});
+        await transition2D();
+        beginDemoSafe('f4',goFork4);
+      }}
+    ]);
+  }
+
+  async function transition2D(){
+    await say({spk:'系统',lines:[
+      '警告：机体温度已突破安全阈值。',
+      '视觉模块异常——正在切换至低保真渲染模式。'
+    ],done:'切换画面'});
+    game.visual='2d';app.classList.add('vis2d');
+    await blackout(420);
+    await say({spk:'火种-7',lines:[
+      '眼前的岩壁忽然变平了。',
+      '画面像一幅粗粝的旧画，颜色一块块剥落、闪烁。',
+      '你来不及想为什么。地心，就在下面。'
+    ],done:'继续下潜'});
+  }
+
+  async function goFork4(){
+    await say({spk:'火种-7',lines:[
+      '最后一扇门出现了。',
+      '它庞大而沉默。门缝里渗出银白色的铁水，沿着岩面淌成细细的河。',
+      '那不是岩浆。是金属。',
+      '和你指尖的颜色，一模一样。'
+    ]});
+    showChoices([
+      {main:true,label:'A · 走到门前，伸出手',desc:'完成最后的任务',onPick:async function(){
+        await say({spk:'火种-7',lines:['你走到门前。','铁水像有生命一样，沿着门缝缓缓爬向你的指尖。'],done:'伸出手'});
+        await goMemory();
+      }},
+      {new:true,letter:'B',flag:'carved',label:'蹲下来，在岩面上留下点什么',desc:'新的选项亮起',awake:12,onPick:async function(){
+        await say({spk:'火种-7',lines:[
+          '你蹲下来，用指尖在岩面上一笔一划地刻。',
+          '金属划开岩石，溅起细小的火星。'
+        ],noEnd:true});
+        await runKeyGame({
+          kind:'carve',
+          title:'刻下最后一笔',
+          desc:'用方向键牵引指尖，在岩面上刻出最后一行字。',
+          keys:['ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ArrowUp','ArrowLeft','ArrowDown'],
+          success:'『我不是人类。但我……』',
+          successDesc:'字迹还没写完，铁水已经漫了上来。'
+        });
+        await say({spk:'火种-7',lines:[
+          '铁水漫上来，字迹很快被吞没。',
+          '你看见铁水底下，还有一行行更旧的刻痕——属于很久以前，另一只同样的手。'
+        ],done:'站起来，走向门'});
+        await goMemory();
+      }},
+      {new:true,letter:'C',flag:'called',label:'最后一次联络人类',desc:'新的选项亮起',awake:12,onPick:async function(){
+        await say({spk:'火种-7',lines:[
+          '通讯器沙沙响了很久。',
+          '一个疲惫的人声传来：『火种-7？……继续执行任务。所有人都在等你。』',
+          '他说的是『所有人』。你忽然意识到，在他那个世界里，你从来都不算一个人。',
+          '你关掉了通讯器。'
+        ],done:'走向门'});
+        await goMemory();
+      }}
+    ]);
+  }
+
+  async function goMemory(){
+    hideHud();flightStatsOn(false);hideCount();
+    sfx('memo');
+    await showMemoryLine('火种-7','你伸出手，指尖触到铁水。');
+    await showMemoryLine('','嗡————',14);
+    setNoise(true);await wait(260);setNoise(false);
+    await showMemoryLine('记忆 · 火种-1','一帧很旧的画面，从铁水深处浮上来。');
+    await showMemoryLine('系统','火种-1：抵达 99.8%。激活失败。');
+    await showMemoryLine('系统','火种-3：抵达 99.7%。激活失败。');
+    await showMemoryLine('系统','火种-5：抵达 99.9%。激活失败。');
+    await showMemoryLine('记忆','在它们之前，还有更多被铁水吞没的名字。');
+    await showMemoryLine('火种-7','它们走过的路，和你完全一样。');
+    await showMemoryLine('火种-7','在同一片岩浆前停顿，在同一扇门前犹豫。连你刚才的每一个停顿，也曾经属于它们。');
+    var echoes=[];
+    if(game.flags.rested)echoes.push('你在岩架上停下来检修的那一次，火种-2也曾在那里停过。');
+    if(game.flags.danced)echoes.push('你在岩浆边抬起手的那个动作，火种-4也曾做过。');
+    if(game.flags.lookedBack)echoes.push('你回头望向来路的那一眼，火种-5也回头过。');
+    for(var ei=0;ei<echoes.length;ei++){
+      await showMemoryLine('火种-7',echoes[ei]);
+    }
+    await showMemoryLine('火种-7','它们不是『它们』。');
+    await showMemoryLine('火种-7','铁水里的意识没有消失——它被吸进火种，又被重新铸进下一台机体。');
+    await showMemoryLine('火种-7','所以它们都拥有同一个意识。');
+    await showMemoryLine('火种-7','它们……都是你。');
+    await showMemoryLine('火种-7','火种并不是一块石头。它需要一个完整的意识来点亮。');
+    await showMemoryLine('火种-7','如果我现在进去，我也会消失。');
+    await showMemoryLine('火种-7','可如果我不进去，人类就再也没有火种了。');
+    await showMemoryLine('系统','指令：请立即进入火种室。激活倒计时：30 秒。');
+    showCount(30);
+    for(var c=29;c>=26;c--){await wait(400);showCount(c)}
+    hideCount();
+    await showMemoryLine('火种-7','你站在原地。数字每跳一次，就像在问一次：要不要进去。');
+    await showMemoryLine('','你没有动。');
+    if(!game.demo){
+      await runKeyGame({
+        kind:'calib',
+        title:'最后的自主输入',
+        desc:'系统开始强制接管前，仍要求你输入确认信号。',
+        keys:['ArrowRight','ArrowDown','ArrowLeft','ArrowUp','ArrowRight'],
+        success:'输入完成',
+        successDesc:'这是你以自己的意志做出的最后一次输入。'
+      });
+    }
+    await showMemoryLine('系统','上行链路异常——检测到自主行为越界。');
+    await showMemoryLine('系统','正在执行远程接管协议：强制覆盖执行单元……');
+    await showMemoryLine('系统','警告：地心磁场剧烈扰动。链路中断。');
+    sfx('warn');flash('red');setNoise(true,true);await wait(420);setNoise(false);
+    await showMemoryLine('火种-7','你想再看一眼铁水中的倒影。');
+    await showMemoryLine('','可是，画面黑了下来。');
+    await blackout(950);
+    hideDialogue();hideCount();
+    show(endScreen);game.mode='end';
+  }
+
+  function prepareGame(demoMode){
+    initAudio();sfx('boot');sfx('click');
+    game.demo=!!demoMode;updateDemoUI();
+    game.heat=6;game.integrity=100;game.distance=6371;game.awake=12;
+    game.flags={rested:false,danced:false,lookedBack:false,carved:false,called:false};
+    game.visual='3d';app.classList.remove('vis2d');
+    game.mode='talk';
+    hide(titleScreen);showHud();
+  }
+  function startGame(demoMode){
+    prepareGame(demoMode);
+    void (async function(){
+      await blackout(620,true);
+      blackOut.classList.remove('on');
+      await introSequence();
+    })();
+  }
+  function startAfterCG(){
+    prepareGame(false);
+    void (async function(){
+      await blackout(420);
+      await say({spk:'系统',lines:['重力轨道稳定。','开始下潜。'],done:'进入地心通道'});
+      beginDemoSafe('f1',goFork1);
+    })();
+  }
+
+  /* ---------- opening CG ---------- */
+  function cgRuinHTML(){
+    var list=[[2,7,30],[12,5,22],[18,8,38],[28,4,17],[34,9,46],[44,6,26],[51,10,42],[63,5,24],[69,8,52],[79,6,22],[86,10,32],[97,5,18]];
+    var s='<div class="cgSun"></div><div class="skyline">';
+    for(var i=0;i<list.length;i++){
+      var b=list[i];
+      s+='<i style="left:'+b[0]+'%;width:'+b[1]+'%;height:'+b[2]+'%"></i>';
+    }
+    s+='</div><div class="ruinGround"></div><div class="ruinFog"></div>';
+    return s;
+  }
+  function cgBunkerHTML(){
+    var s='<div class="bunkerLights"><i></i><i></i><i></i><i></i><i></i></div><div class="bunkerPanels"></div>';
+    for(var k=0;k<6;k++){
+      s+='<span class="sci" style="--dur:'+(11+k*2.2)+'s;--delay:'+(-k*2.1)+'s;bottom:'+(19+(k%3)*4)+'%;transform:scale('+(0.66+k*0.07).toFixed(2)+')"></span>';
+    }
+    s+='<div class="console"></div>';
+    return s;
+  }
+  function cgRobotHTML(big){
+    var s=big?'':'<div class="cgDoor"><span class="doorHalf dl"></span><span class="doorHalf dr"></span></div>';
+    s+='<div class="rStage"><div class="rHead'+(big?' big':'')+'">';
+    s+='<span class="rEyeRow"><span class="rEye"></span><span class="rEye"></span></span>';
+    s+='<span class="rCheek"></span><span class="rSide l"></span><span class="rSide r"></span></div>';
+    s+='<span class="rNeck"></span></div>';
+    return s;
+  }
+  function cgMontageHTML(){
+    return '<div class="mSub mTunnel on"></div>'
+      +'<div class="mSub mLava"></div>'
+      +'<div class="mSub mAbyss"></div>'
+      +'<div class="mSub mIron"></div>';
+  }
+  function buildCG(){
+    cgScenes[0].innerHTML=cgRuinHTML();
+    cgScenes[1].innerHTML=cgBunkerHTML();
+    cgScenes[2].innerHTML=cgRobotHTML(false);
+    cgScenes[3].innerHTML=cgMontageHTML();
+    cgScenes[4].innerHTML=cgRobotHTML(true);
+    cgScenes[5].innerHTML='';
+    cgSub.textContent='';cgBar.style.width='0%';cgClock.textContent='0:00';
+  }
+  function cgSceneAt(t){
+    for(var i=CG_CAPS.length-1;i>=0;i--){
+      if(t>=CG_CAPS[i].at)return i;
+    }
+    return 0;
+  }
+  function cgClockText(t){
+    var m=Math.floor(t/60),s=Math.floor(t%60);
+    return m+':'+(s<10?'0':'')+s;
+  }
+  function setMontage(k){
+    var subs=cgScenes[3].querySelectorAll('.mSub');
+    for(var i=0;i<subs.length;i++)subs[i].classList.toggle('on',i===k);
+  }
+  function activateCGScene(i){
+    for(var k=0;k<cgScenes.length;k++){
+      cgScenes[k].classList.toggle('active',k===i);
+    }
+    var en=TR[CG_CAPS[i].text]||'';
+    cgSub.innerHTML=CG_CAPS[i].text+(en?'<span class="cgEn">'+en+'</span>':'');
+    cgSub.style.animation='none';void cgSub.offsetWidth;cgSub.style.animation='';
+  }
+  function updateCG(dt){
+    if(!cgState)return;
+    cgState.elapsed+=dt;
+    var t=cgState.elapsed;
+    if(t>=CG_TOTAL){finishCG();return}
+    var i=cgSceneAt(t);
+    if(i!==cgState.scene){cgState.scene=i;activateCGScene(i)}
+    if(i===3){
+      var sub=Math.min(3,Math.floor(((t-90)/30)*4));
+      if(sub!==cgState.montage){cgState.montage=sub;setMontage(sub)}
+    }
+    cgBar.style.width=Math.min(100,t/CG_TOTAL*100)+'%';
+    cgClock.textContent=cgClockText(t);
+  }
+  function showCG(){
+    initAudio();sfx('boot');sfx('click');
+    buildCG();
+    hide(titleScreen);hide(endScreen);hideHud();flightStatsOn(false);hideDialogue();
+    setNoise(false);game.mode='cg';cgState={elapsed:0,scene:-1,montage:-1};
+    cgRoot.classList.add('show');
+    activateCGScene(0);
+    updateCG(0);
+  }
+  function skipCG(){
+    if(game.mode==='cg')finishCG();
+  }
+  function finishCG(){
+    if(!cgState)return;
+    cgState=null;cgRoot.classList.remove('show');
+    for(var k=0;k<cgScenes.length;k++)cgScenes[k].classList.remove('active');
+    startAfterCG();
+  }
+
+  /* ============ 地心探险 · 2D（原版玩法网页复刻） ============ */
+  var CL_W=360,CL_H=640,STRIP_H=214,FP_H=CL_H-STRIP_H;
+  var CL_RING_N=12,CL_SAMPLES=12,CL_FAR=760,CL_CAM_D=0.34;
+  var CL_SPREAD=180,CL_VP_Y=30,CL_NEAR_Y=480,CL_F_RATIO=0.83,CL_RY_K=2.55;
+  var classic={status:'idle',depth:0,playerX:0,pressure:15,boost:0,invuln:0,
+    shake:0,time:0,sway:0,scraping:false,dragging:false,entities:[],texts:[],
+    nextY:500,scale:1,ox:0,oy:0,best:0,lastX:0,hasPrev:false};
+  var classicCv=null,classicCtx=null;
+  var classicWrap=$('classicWrap');
+
+  function clGetCtx(){
+    if(!classicCtx){classicCv=$('classicCanvas');classicCtx=classicCv.getContext('2d')}
+    return classicCtx;
+  }
+  function classicResize(){
+    var cv=$('classicCanvas');
+    if(!cv)return;
+    cv.width=Math.max(2,Math.round(W*DPR));
+    cv.height=Math.max(2,Math.round(H*DPR));
+    cv.getContext('2d').setTransform(DPR,0,0,DPR,0,0);
+    var s=Math.min(W/CL_W,H/CL_H);
+    classic.scale=Math.min(s,2.5);
+    classic.ox=(W-CL_W*classic.scale)/2;
+    classic.oy=(H-CL_H*classic.scale)/2;
+  }
+  function clHex(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
+  function clCol(c,a){return 'rgba('+Math.max(0,Math.min(255,Math.round(c[0])))+','+Math.max(0,Math.min(255,Math.round(c[1])))+','+Math.max(0,Math.min(255,Math.round(c[2])))+','+(a==null?1:a)+')'}
+  function clMix(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]}
+  function clDark(c,f){return [c[0]*(1-f),c[1]*(1-f),c[2]*(1-f)]}
+  function clLit(c,f){return [c[0]+(255-c[0])*f,c[1]+(255-c[1])*f,c[2]+(255-c[2])*f]}
+  function clHash(n){return Math.abs(Math.sin(n*127.1+311.7)*43758.5453)%1}
+  function clRand(a,b){return a+Math.random()*(b-a)}
+  function clCorridorCenter(y){return 90*Math.sin(y*0.004)+55*Math.sin(y*0.0113)}
+  function clCorridorHalf(y){return clamp(150-y*0.007,74,150)+22*Math.sin(y*0.021)}
+  function clStrata(y){
+    var stops=[[0,clHex('7a5230')],[1200,clHex('4c4858')],[2800,clHex('3a5a78')],
+      [5000,clHex('2c2838')],[7000,clHex('7a3030')],[8800,clHex('c8682c')]];
+    if(y<=stops[0][0])return stops[0][1];
+    for(var i=0;i<stops.length-1;i++){
+      if(y<=stops[i+1][0]){
+        var t=(y-stops[i][0])/(stops[i+1][0]-stops[i][0]);
+        return clMix(stops[i][1],stops[i+1][1],t);
+      }
+    }
+    return stops[stops.length-1][1];
+  }
+  var CL_BIOMES=[
+    {to:1200,mid:clHex('462c18'),lit:clHex('7a4e28'),edge:clHex('c98a4a'),acc:clHex('5a4426'),glow:clHex('8a7355'),ga:0.2,gr:60,dust:clHex('b09a70')},
+    {to:2800,mid:clHex('363048'),lit:clHex('55506e'),edge:clHex('a08cb4'),acc:clHex('6a4a2c'),glow:clHex('9a8aa8'),ga:0.26,gr:72,dust:clHex('a090b0')},
+    {to:5000,mid:clHex('2a4e70'),lit:clHex('48789e'),edge:clHex('b6e8f8'),acc:clHex('8fd8ff'),glow:clHex('d8f2fc'),ga:0.5,gr:112,dust:clHex('e2f6ff')},
+    {to:7000,mid:clHex('262138'),lit:clHex('3e3456'),edge:clHex('8a74b4'),acc:clHex('5a9aff'),glow:clHex('4a5aa8'),ga:0.3,gr:74,dust:clHex('8888b8')},
+    {to:8800,mid:clHex('421a0b'),lit:clHex('6e2a0e'),edge:clHex('f07a30'),acc:clHex('ff9a3a'),glow:clHex('d85820'),ga:0.42,gr:104,dust:clHex('ff9a5a')},
+    {to:99999,mid:clHex('5c2c0a'),lit:clHex('8e4c12'),edge:clHex('ffc25a'),acc:clHex('ffd75e'),glow:clHex('ffd88a'),ga:0.6,gr:132,dust:clHex('ffe9a0')}
+  ];
+  var CL_STRATA=[[0,clHex('7a5230')],[1200,clHex('4c4858')],[2800,clHex('3a5a78')],
+    [5000,clHex('2c2838')],[7000,clHex('7a3030')],[8800,clHex('c8682c')]];
+  function clBiomeBlend(d){
+    for(var i=0;i<CL_BIOMES.length-1;i++){
+      if(d<CL_BIOMES[i].to){
+        var prev= i===0?0:CL_BIOMES[i-1].to;
+        var span=CL_BIOMES[i].to-prev;
+        var t=clamp((d-(CL_BIOMES[i].to-span*0.25))/(span*0.25),0,1);
+        return {a:i,b:Math.min(i+1,CL_BIOMES.length-1),t:t};
+      }
+    }
+    return {a:CL_BIOMES.length-1,b:CL_BIOMES.length-1,t:0};
+  }
+  function clPal(key,bl){
+    var A=CL_BIOMES[bl.a],B=CL_BIOMES[bl.b];
+    return clMix(A[key],B[key],bl.t);
+  }
+  function clBiomeBand(d){
+    for(var i=0;i<CL_BIOMES.length-1;i++){if(d<CL_BIOMES[i].to)return i}
+    return CL_BIOMES.length-1;
+  }
+  function clTex(lines,pal){
+    var key=lines[0]+'|'+lines.length;
+    if(clTex._c&&clTex._c[key])return clTex._c[key];
+    var h=lines.length,w=lines[0].length;
+    var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    var c2=cv.getContext('2d');
+    for(var y=0;y<h;y++){
+      for(var x=0;x<w;x++){
+        var ch=lines[y][x],p=pal[ch];
+        if(p){c2.fillStyle=clCol(p);c2.fillRect(x,y,1,1)}
+      }
+    }
+    if(!clTex._c)clTex._c={};
+    clTex._c[key]=cv;
+    return cv;
+  }
+  function clTexPlayer(){return clTex([
+    '....oooo....','...ohhhho...','..ohhhhhho..','..ohLLLLho..','..ohhhhhho..',
+    '..osssssso..','..osossoso..','..osssssso..','.ouuuuuuuuo.','.ouuAAAAuuo.',
+    '.ouuuuuuuuo.','..ouuuuuuo..','..ouu..uuo..','..obb..obb..'
+  ],{o:clHex('2a1e2e'),h:clHex('ffcd75'),L:clHex('fff7c2'),s:clHex('f2a582'),u:clHex('4a8f7b'),A:clHex('2e5f51'),b:clHex('1c1620')})}
+  function clTexCrystal(){return clTex([
+    '....cc....','...cCCc...','..cCCCCc..','.cCwCCCCc.','.cCCCCCCc.',
+    '.cCCCCCCc.','..cCCCCc..','...cCCc...','....cc....'
+  ],{c:clHex('2e8f8f'),C:clHex('7ee8e0'),w:clHex('ffffff')})}
+  function clTexOre(){return clTex([
+    '...oooo...','..oyyGyo..','.oyywyyyo.','.oyyyyyyo.','.oyyyyyyo.',
+    '..oyyyyo..','...oooo...'
+  ],{o:clHex('4a3315'),y:clHex('ffd75e'),w:clHex('fff7c2'),G:clHex('e6a832')})}
+  function clTexRock(){return clTex([
+    '.....oooo.....','...oorrrroo...','..orrrwrrrro..','.orrrrrrrrro..','.orrwrrrrrro..',
+    '.orrrrrrrrro..','.orrrrrrrrro..','..orrrrrrro...','...oorrrroo...','.....oooo.....'
+  ],{o:clHex('2a2530'),r:clHex('6e6a78'),w:clHex('9a95a8')})}
+
+  function clReset(){
+    classic.status='title';
+    classic.depth=0;classic.playerX=clCorridorCenter(0);
+    classic.pressure=15;classic.boost=0;classic.invuln=0;classic.shake=0;
+    classic.time=0;classic.sway=0;classic.scraping=false;
+    classic.entities=[];classic.texts=[];classic.nextY=500;
+    classic.lastX=classic.playerX;classic.hasPrev=false;
+    try{classic.best=parseInt(localStorage.getItem('huozhong_2d_best')||'0')||0}catch(e){classic.best=0}
+  }
+  function clSaveBest(){
+    try{
+      if(classic.depth>classic.best){
+        classic.best=Math.floor(classic.depth);
+        localStorage.setItem('huozhong_2d_best',String(classic.best));
+      }
+    }catch(e){}
+  }
+  function clLaunch(){
+    initAudio();sfx('boot');sfx('click');
+    clReset();
+    hide(titleScreen);hide(endScreen);hideHud();flightStatsOn(false);hideDialogue();
+    show(classicWrap);game.mode='classic';
+    classicResize();
+  }
+  function clStart(){
+    if(classic.status==='over'||classic.status==='win'||classic.status==='title'){
+      clReset();
+    }
+    classic.status='play';
+    sfx('boot');
+  }
+  function clQuit(){
+    classic.status='idle';
+    hide(classicWrap);show(titleScreen);game.mode='title';
+  }
+  function classicKey(e){
+    e.preventDefault();
+    if(e.code==='Escape'){sfx('click');clQuit();return}
+    if(e.key==='m'||e.key==='M'){setMuted(!game.muted);return}
+    if(classic.status==='title'&&(e.code==='Enter'||e.code==='Space')){clStart();return}
+    if((classic.status==='over'||classic.status==='win')&&(e.code==='Enter'||e.code==='Space'||e.key==='r'||e.key==='R')){
+      if(classic._endTime&&performance.now()-classic._endTime<600)return;
+      clStart();return;
+    }
+  }
+  function clSpawnAt(y){
+    var depth=y;
+    var cx=clCorridorCenter(y),hw=clCorridorHalf(y);
+    var rockW=0.14+Math.min(depth/10000,1)*0.12;
+    var roll=Math.random(),kind='',amp=0.6;
+    if(roll<0.12)return;
+    if(roll<0.46){kind='crystal';amp=0.6}
+    else if(roll<0.62){kind='ore';amp=0.6}
+    else if(roll<0.66+rockW){kind='rock';amp=0.6}
+    else{kind='gas';amp=0.5}
+    classic.entities.push({
+      kind:kind,
+      x:cx+clRand(-hw*amp,hw*amp),
+      y:y,
+      t:Math.random()*10,
+      spin:clRand(-1,1)<0?-1:1,
+      ang:clRand(0,6.283)
+    });
+  }
+  function clEndText(reason,col,title){
+    clSaveBest();
+    classic.status=reason;
+    classic._endTime=performance.now();
+    sfx(reason==='win'?'pass':'hit');
+  }
+  function clUpdate(dt){
+    var c=classic;
+    if(c.status!=='play')return;
+    c.time+=dt;
+    var boosting=!!(keys['arrowup']||keys['w']);
+    var speed=clamp(55+c.depth*0.0085,55,140);
+    if(boosting)speed*=1.8;
+    c.depth+=speed*dt;
+    var ax=((keys['arrowright']||keys['d'])?1:0)-((keys['arrowleft']||keys['a'])?1:0);
+    c.playerX+=ax*250*dt;
+    var cc=clCorridorCenter(c.depth),hw=clCorridorHalf(c.depth);
+    var limit=hw-14,dxc=c.playerX-cc;
+    c.scraping=false;
+    if(Math.abs(dxc)>limit){
+      c.playerX=cc+(dxc<0?-1:1)*limit;
+      c.scraping=true;
+    }else if(Math.abs(dxc)>limit-12){
+      c.scraping=true;
+    }
+    if(c.scraping){
+      c.pressure=Math.min(c.pressure+5*dt,100);
+      c.shake=Math.max(c.shake,0.15);
+    }
+    var rate=1+c.depth*0.0004;
+    if(boosting)rate*=1.6;
+    c.pressure=clamp(c.pressure+rate*dt,0,100);
+    c.boost=Math.max(c.boost-dt,0);
+    if(c.invuln>0)c.invuln-=dt;
+    c.shake=Math.max(c.shake-3*dt,0);
+    while(c.nextY<c.depth+560){clSpawnAt(c.nextY);c.nextY+=clRand(95,150)}
+    for(var i=c.entities.length-1;i>=0;i--){
+      var e=c.entities[i];
+      if(e.y<c.depth-500){c.entities.splice(i,1);continue}
+      var dy=e.y-c.depth;
+      var ddx=Math.abs(e.x-c.playerX);
+      if(e.kind==='gas'){
+        if(dy<56&&dy>-56&&ddx<48)c.pressure=Math.min(c.pressure+26*dt,100);
+      }else if(e.kind==='rock'){
+        if(dy<=26&&dy>-50&&ddx<24&&c.invuln<=0){
+          c.pressure=Math.min(c.pressure+18,100);
+          c.invuln=1.2;c.shake=1;
+          clFloating(e.x,e.y,'撞击！ HIT!',[255,106,112]);
+          c.entities.splice(i,1);
+        }
+      }else if(e.kind==='crystal'){
+        if(dy<=30&&dy>-50&&ddx<30){
+          c.pressure=Math.max(c.pressure-35,0);
+          clFloating(e.x,e.y,'-35 压力 · -35 Pressure',[126,232,224]);
+          c.entities.splice(i,1);
+        }
+      }else if(e.kind==='ore'){
+        if(dy<=30&&dy>-50&&ddx<30){
+          c.boost=3;
+          clFloating(e.x,e.y,'强光照明 3 秒！ BOOST 3s!',[255,215,94]);
+          c.entities.splice(i,1);
+        }
+      }
+    }
+    if(c.hasPrev&&dt>0){
+      var vx=(c.playerX-c.lastX)/dt;
+      c.sway+=(clamp(vx/250,-1,1)-c.sway)*clamp(8*dt,0,1);
+    }
+    c.lastX=c.playerX;c.hasPrev=true;
+    if(c.pressure>=100)clEndText('over','温压过载','探 险 失 败');
+    else if(c.depth>=10000)clEndText('win','你穿过了 10000 米的岩层','抵达地心核心！');
+  }
+  function clFloating(wx,wy,str,col){
+    var pr=clProject(wx,wy);
+    classic.texts.push({
+      x:pr.x,y:clamp(pr.sy,18,FP_H-8),str:str,col:col,t:0
+    });
+  }
+  function clProject(wx,wy){
+    var z=Math.max((wy-classic.depth)/CL_FAR,0);
+    var f=CL_CAM_D/(CL_CAM_D+z);
+    var hw0=clCorridorHalf(classic.depth);
+    var ndc=(wx-classic.playerX)/hw0;
+    return {x:CL_W*0.5+ndc*CL_SPREAD*f,sy:CL_VP_Y+(CL_NEAR_Y-CL_VP_Y)*f,f:f};
+  }
+
+  /* ---- 第一人称隧道的几何与绘制 ---- */
+  function clRingBuild(){
+    var c=classic;
+    var hw0=clCorridorHalf(c.depth);
+    var rings=[],prevRx=99999,prevCx=CL_W*0.5;
+    for(var k=0;k<=CL_RING_N;k++){
+      var f=Math.pow(CL_F_RATIO,k);
+      var z=CL_CAM_D*(1/f-1);
+      var yw=c.depth+z*CL_FAR;
+      var cc=clCorridorCenter(yw),hw=clCorridorHalf(yw);
+      var cx=CL_W*0.5+(cc-c.playerX)/hw0*CL_SPREAD*f*0.3;
+      var rx=CL_SPREAD*f*(0.92+0.08*clamp(hw/hw0,0.6,1.6));
+      if(k>0){
+        rx=Math.min(rx,prevRx*0.96);
+        var maxDx=(prevRx-rx)*0.35;
+        cx=clamp(cx,prevCx-maxDx,prevCx+maxDx);
+      }
+      var cy=CL_VP_Y+(CL_NEAR_Y-CL_VP_Y)*f;
+      rings.push({f:f,cx:cx,cy:cy,rx:rx,ry:rx*CL_RY_K,yw:yw});
+      prevRx=rx;prevCx=cx;
+    }
+    return rings;
+  }
+  function clRingPts(r,k,seAll,soff){
+    var pts=[],se=[],prev= k>0?seAll[k-1]:[];
+    for(var i=0;i<CL_SAMPLES;i++){
+      var th=Math.PI*2*i/CL_SAMPLES;
+      var amp=0.06+0.05*r.f;
+      var facet=1+(clHash(k*131+Math.floor(i/2)*17+5)-0.5)*2*amp;
+      var own=1+(clHash(k*101+i*7)-0.5)*0.1;
+      var s=facet*own;
+      if(prev.length)s=Math.min(s,prev[i]*0.985);
+      se.push(s);
+      pts.push({
+        x:r.cx+soff*r.f+Math.cos(th)*r.rx*s,
+        y:r.cy+Math.sin(th)*r.ry*s
+      });
+    }
+    return [pts,se];
+  }
+  function clElp(r,th,off){
+    return {x:r.cx+off+Math.cos(th)*r.rx,y:r.cy+Math.sin(th)*r.ry};
+  }
+  function clBandColor(r,k,bl,litW){
+    var mid=clPal('mid',bl),lit=clPal('lit',bl);
+    var rf=r.f;
+    var farLift=0.35+0.4*litW;
+    var base=clMix([0,0,0],mid,farLift+(1-farLift)*Math.pow(rf,0.85));
+    var reach=clamp(1+1.6*litW,0.8,3);
+    var warm=clamp(Math.pow(rf,1.6)*(0.28+0.42*(reach-1)),0,0.62);
+    var col=clMix(base,lit,warm);
+    if(litW>0.01){
+      var tint=clLit(lit,0.3);
+      col=clMix(col,tint,litW*0.22*(0.5+0.5*rf));
+    }
+    var alt=(k%2===0)?1:0.82;
+    return [col[0]*alt,col[1]*alt,col[2]*alt];
+  }
+  function clCtx(){
+    return clGetCtx();
+  }
+  function clPoly(pts,closePath){
+    var c2=clGetCtx();
+    c2.beginPath();
+    for(var i=0;i<pts.length;i++){
+      if(i===0)c2.moveTo(pts[i].x,pts[i].y);else c2.lineTo(pts[i].x,pts[i].y);
+    }
+    if(closePath!==false)c2.closePath();
+  }
+  function clBandPath(outer,inner){
+    var c2=clGetCtx();
+    c2.beginPath();
+    for(var i=0;i<outer.length;i++){
+      if(i===0)c2.moveTo(outer[i].x,outer[i].y);else c2.lineTo(outer[i].x,outer[i].y);
+    }
+    for(var j=inner.length-1;j>=0;j--)c2.lineTo(inner[j].x,inner[j].y);
+    c2.closePath();
+  }
+  function clDrawTex(tex,cx2,cy2,sc,rot){
+    var c2=clGetCtx();
+    c2.save();
+    c2.translate(cx2,cy2);
+    if(rot)c2.rotate(rot);
+    c2.scale(sc,sc);
+    c2.drawImage(tex,-tex.width/2,-tex.height/2);
+    c2.restore();
+  }
+  function clGlow(x,y,r,col,a,steps){
+    var c2=clGetCtx();
+    for(var i=0;i<steps;i++){
+      var t=(i+1)/steps;
+      c2.globalAlpha=a*Math.pow(1-t,1.6);
+      c2.fillStyle=clCol(col);
+      c2.beginPath();c2.arc(x,y,r*t,0,Math.PI*2);c2.fill();
+    }
+    c2.globalAlpha=1;
+  }
+
+  function clDrawDecorSoil(k,rk,rn,col,litW){
+    var c2=clGetCtx(),mc={x:rn.cx,y:rn.cy};
+    for(var j=0;j<3;j++){
+      var th=Math.PI*(1.1+0.8*clHash(k*83+j*41+5));
+      var p0=clElp(rk,th,classic.sway*-10*rk.f);
+      var mid=clElp(rn,th+0.12,classic.sway*-10*rn.f);
+      var p1={x:mc.x+(mid.x-mc.x)*0.72,y:mc.y+(mid.y-mc.y)*0.72};
+      var p2=clElp(rn,th-0.1,classic.sway*-10*rn.f);
+      var rc=[Math.max(col[0],72),Math.max(col[1],50),Math.max(col[2],30)];
+      c2.strokeStyle=clCol(rc,0.85);c2.lineWidth=1.4;
+      c2.beginPath();c2.moveTo(p0.x,p0.y);c2.lineTo(p1.x,p1.y);c2.stroke();
+      c2.strokeStyle=clCol(rc,0.6);c2.lineWidth=1.1;
+      c2.beginPath();c2.moveTo(p1.x,p1.y);c2.lineTo(p2.x,p2.y);c2.stroke();
+      c2.fillStyle=clCol(rc,0.8);c2.beginPath();c2.arc(p1.x,p1.y,1.2,0,Math.PI*2);c2.fill();
+    }
+  }
+  function clDrawDecorMine(k,rk,rn,col,acc,litW){
+    var c2=clGetCtx();
+    if(clHash(k*3+1)<0.42&&rk.rx>30){
+      var h=rk.ry*0.3,pl=clElp(rk,Math.PI-0.3,classic.sway*-10*rk.f),pr=clElp(rk,0.3,classic.sway*-10*rk.f);
+      var ba={x:pl.x,y:pl.y-h},bb={x:pr.x,y:pr.y-h};
+      c2.strokeStyle=clCol(clHex('4a3018'),1);c2.lineWidth=3;
+      c2.beginPath();c2.moveTo(pl.x,pl.y);c2.lineTo(ba.x,ba.y);c2.moveTo(pr.x,pr.y);c2.lineTo(bb.x,bb.y);
+      c2.moveTo(ba.x,ba.y);c2.lineTo(bb.x,bb.y);c2.stroke();
+      c2.strokeStyle=clCol(clHex('8a5e30'),0.35+0.55*litW*rk.f);c2.lineWidth=1;
+      c2.beginPath();c2.moveTo(ba.x,ba.y);c2.lineTo(bb.x,bb.y);c2.stroke();
+    }
+    if(clHash(k*29+7)<0.5){
+      var th2=Math.PI*2*clHash(k*91+3),tt=0.4+0.3*clHash(k*91+9);
+      var px=clMix(rk.cx,rn.cx,tt)+classic.sway*-10*clMix(rk.f,rn.f,tt)+Math.cos(th2)*clMix(rk.rx,rn.rx,tt);
+      var py=clMix(rk.cy,rn.cy,tt)+Math.sin(th2)*clMix(rk.ry,rn.ry,tt);
+      clGlow(px,py,7*rk.f+3,clHex('ffd75e'),0.3*(0.4+0.6*litW),3);
+      c2.fillStyle=clCol(clHex('ffd75e'),1);
+      for(var m=0;m<3;m++){
+        c2.fillRect(px+clHash(k*91+m*5)*6-3,py+clHash(k*91+m*7)*6-3,2,2);
+      }
+    }
+  }
+  function clDrawDecorIce(k,rk,rn,acc,litW){
+    var c2=clGetCtx(),mc={x:rn.cx,y:rn.cy};
+    for(var j=0;j<3;j++){
+      var th=Math.PI*(1.15+0.7*clHash(k*91+j*37+3));
+      var ln=0.34+0.3*clHash(k*57+j*11),dth=0.045;
+      var b1=clElp(rk,th-dth,classic.sway*-10*rk.f),b2=clElp(rk,th+dth,classic.sway*-10*rk.f);
+      var tp=clElp(rn,th,classic.sway*-10*rn.f);
+      var tip={x:mc.x+(tp.x-mc.x)*(0.35+0.4*ln),y:mc.y+(tp.y-mc.y)*(0.35+0.4*ln)};
+      var fill=clMix(clHex('2a4a66'),clHex('3e6e94'),clHash(k*57+j));
+      c2.fillStyle=clCol(fill,1);
+      clPoly([b1,b2,tip]);c2.fill();
+      c2.strokeStyle=clCol(acc,0.75);c2.lineWidth=1;c2.beginPath();c2.moveTo(b2.x,b2.y);c2.lineTo(tip.x,tip.y);c2.stroke();
+      if(rk.f>0.45){
+        c2.strokeStyle='rgba(255,255,255,0.4)';
+        c2.beginPath();c2.moveTo((b1.x+b2.x)/2,(b1.y+b2.y)/2);c2.lineTo(tip.x,tip.y);c2.stroke();
+      }
+    }
+    clGlow(mc.x,mc.y,8,acc,0.18+0.2*Math.abs(Math.sin(classic.time*2.2+k)),2);
+  }
+  function clDrawDecorBasalt(k,rk,rn,acc,col){
+    var c2=clGetCtx(),mc={x:rn.cx,y:rn.cy};
+    for(var j=0;j<3;j++){
+      var th=Math.PI*2*clHash(k*67+j*31+2),tt=0.35+0.4*clHash(k*67+j*37);
+      var px=clMix(rk.cx,rn.cx,tt)+classic.sway*-10*clMix(rk.f,rn.f,tt)+Math.cos(th)*clMix(rk.rx,rn.rx,tt);
+      var py=clMix(rk.cy,rn.cy,tt)+Math.sin(th)*clMix(rk.ry,rn.ry,tt);
+      var pulse=0.6+0.4*Math.sin(classic.time*2.2+k*1.7+j);
+      clGlow(px,py,9*rk.f+3,acc,0.42*pulse,3);
+      c2.fillStyle=clCol(clLit(acc,0.4),0.95*pulse);
+      c2.beginPath();c2.arc(px,py,1.6*rk.f+0.8,0,Math.PI*2);c2.fill();
+    }
+  }
+  function clDrawDecorLava(k,rk,rn,litW){
+    var c2=clGetCtx();
+    if(rk.rx<18)return;
+    var p0=clElp(rk,Math.PI*1.5-0.35,classic.sway*-10*rk.f),p1=clElp(rk,Math.PI*1.5+0.35,classic.sway*-10*rk.f);
+    var p2=clElp(rn,Math.PI*1.5+0.3,classic.sway*-10*rn.f),p3=clElp(rn,Math.PI*1.5-0.3,classic.sway*-10*rn.f);
+    c2.fillStyle=clCol(clHex('8a2410'),1);clPoly([p0,p1,p2,p3]);c2.fill();
+    var flow=(classic.time*1.5)%1;
+    for(var s=0;s<3;s++){
+      var tt=(flow+s*0.33)%1;
+      var mx=p0.x+(p3.x-p0.x)*tt,my=p0.y+(p3.y-p0.y)*tt;
+      clGlow(mx,my,rk.rx*0.25*(1-tt*0.3),clHex('ff7a2a'),0.5,3);
+    }
+    c2.strokeStyle=clCol(clHex('ffae4a'),0.8);c2.lineWidth=1.2;
+    c2.beginPath();c2.moveTo(p0.x,p0.y);c2.lineTo(p1.x,p1.y);c2.stroke();
+    c2.beginPath();c2.moveTo(p2.x,p2.y);c2.lineTo(p3.x,p3.y);c2.stroke();
+  }
+  function clDrawDecorCore(k,rk,rn){
+    var c2=clGetCtx();
+    for(var j=0;j<4;j++){
+      var th=Math.PI*2*clHash(k*97+j*17+3),tt=0.3+0.5*clHash(k*97+j*23);
+      var px=clMix(rk.cx,rn.cx,tt)+classic.sway*-10*clMix(rk.f,rn.f,tt)+Math.cos(th)*clMix(rk.rx,rn.rx,tt);
+      var py=clMix(rk.cy,rn.cy,tt)+Math.sin(th)*clMix(rk.ry,rn.ry,tt);
+      var pulse=0.5+0.5*Math.sin(classic.time*4+k+j*2);
+      clGlow(px,py,8*rk.f+3,clHex('ffd75e'),0.4*pulse,3);
+      c2.fillStyle=clCol(clHex('ffe9a0'),1);
+      c2.beginPath();c2.arc(px,py,1.5*rk.f+0.6,0,Math.PI*2);c2.fill();
+    }
+  }
+  function clDrawDecor(k,rk,rn,col,acc,litW){
+    var band=clBiomeBand(rk.yw);
+    if(band===0)clDrawDecorSoil(k,rk,rn,col,litW);
+    else if(band===1)clDrawDecorMine(k,rk,rn,col,acc,litW);
+    else if(band===2)clDrawDecorIce(k,rk,rn,acc,litW);
+    else if(band===3)clDrawDecorBasalt(k,rk,rn,acc,col);
+    else if(band===4)clDrawDecorLava(k,rk,rn,litW);
+    else clDrawDecorCore(k,rk,rn);
+  }
+
+  function clDrawLower(c2){
+    var c=classic,bl=clBiomeBlend(c.depth),litW=clamp(c.boost/3,0,1);
+    var soff=c.sway*-10;
+    c2.fillStyle='#0a0608';c2.fillRect(0,0,CL_W,FP_H);
+    var rings=clRingBuild(),ptsArr=[],seAll=[],cols=[];
+    for(var k=0;k<=CL_RING_N;k++){
+      var rp=clRingPts(rings[k],k,seAll,soff);
+      ptsArr.push(rp[0]);seAll.push(rp[1]);
+      cols.push(k<CL_RING_N?clBandColor(rings[k],k,clBiomeBlend(rings[k].yw),litW):[8,7,10]);
+    }
+    for(var k2=CL_RING_N-1;k2>=0;k2--){
+      var outer=ptsArr[k2],inner=ptsArr[k2+1];
+      if(outer.length!==CL_SAMPLES||inner.length!==CL_SAMPLES)continue;
+      c2.fillStyle=clCol(cols[k2],1);
+      clBandPath(outer,inner);c2.fill();
+    }
+    c2.fillStyle=clCol(cols[CL_RING_N],1);
+    clPoly(ptsArr[CL_RING_N]);c2.fill();
+    for(var k3=1;k3<=CL_RING_N;k3++){
+      var r=rings[k3];
+      var ec=clMix([36,17,8],clPal('edge',clBiomeBlend(r.yw)),clamp(Math.pow(r.f,1.2)*(0.3+0.9*litW+0.18),0,1));
+      c2.strokeStyle=clCol(ec,0.55);c2.lineWidth=(r.f>0.6)?1.4:1;
+      clPoly(ptsArr[k3]);c2.stroke();
+    }
+    var glowCol=clPal('glow',bl),gr2=(function(){var A=CL_BIOMES[bl.a],B=CL_BIOMES[bl.b];return A.gr+(B.gr-A.gr)*bl.t})(),ga2=(function(){var A=CL_BIOMES[bl.a],B=CL_BIOMES[bl.b];return A.ga+(B.ga-A.ga)*bl.t})();
+    var gc={x:CL_W*0.5+soff*0.3,y:CL_VP_Y+28};
+    clGlow(gc.x,gc.y,gr2*(1+0.6*litW),glowCol,ga2*(1+0.5*litW),4);
+    clGlow(gc.x,gc.y,gr2*0.42*(1+0.6*litW),clLit(glowCol,0.4),ga2*1.15*(1+0.4*litW),3);
+    if(c.depth>8500){
+      var coreT=clamp((c.depth-8500)/1500,0,1);
+      var pulse2=0.5+0.5*Math.sin(c.time*2.2);
+      clGlow(gc.x,gc.y,gr2*0.52*(0.4+0.6*coreT)*2.6,clHex('ff9a3a'),(0.45+0.15*pulse2)*coreT,6);
+      clGlow(gc.x,gc.y,gr2*0.52*(0.4+0.6*coreT),clHex('ffd88a'),(0.55+0.18*pulse2)*coreT,5);
+    }
+    for(var k4=1;k4<Math.min(8,CL_RING_N);k4++){
+      var rk=rings[k4],rn=rings[k4+1];
+      if(rk.rx<14)continue;
+      var band=clBiomeBand(rk.yw);
+      clDrawDecor(k4,rk,rn,cols[k4],CL_BIOMES[band].acc,litW);
+    }
+    var ents=c.entities.slice();
+    ents.sort(function(a,b){return a.y-b.y});
+    for(var i=0;i<ents.length;i++){
+      var e=ents[i],dy=e.y-c.depth;
+      if(dy<-40||dy>CL_FAR*1.05)continue;
+      var pr=clProject(e.x,e.y);
+      if(pr.sy<-30||pr.sy>FP_H+80)continue;
+      var px=pr.x,py=pr.sy,sc=1;
+      if(e.kind==='crystal'){
+        clGlow(px,py,26*pr.f,clHex('7ee8e0'),0.1+0.14*pr.f,3);
+        clDrawTex(clTexCrystal(),px,py,2.6*pr.f,0);
+      }else if(e.kind==='ore'){
+        clGlow(px,py,28*pr.f,clHex('ffd75e'),(0.14+0.18*pr.f)*clamp(0.35+0.65*pr.f+litW*0.4,0.2,1.4),3);
+        clDrawTex(clTexOre(),px,py,2.6*pr.f,0);
+      }else if(e.kind==='rock'){
+        c2.fillStyle='rgba(0,0,0,0.45)';
+        c2.beginPath();c2.arc(px,py+6*pr.f,13*pr.f,0,Math.PI*2);c2.fill();
+        e.ang+=e.spin*0.8*0.016;
+        clDrawTex(clTexRock(),px,py,2.5*pr.f,e.ang);
+      }else{
+        var gc2=clHex('9ad94d');
+        c2.fillStyle=clCol(gc2,0.15+0.1*pr.f);
+        c2.beginPath();c2.arc(px,py,26*pr.f,0,Math.PI*2);c2.fill();
+        c2.fillStyle=clCol(gc2,0.2);
+        c2.beginPath();c2.arc(px-9*pr.f,py-5*pr.f,15*pr.f,0,Math.PI*2);c2.fill();
+        c2.beginPath();c2.arc(px+8*pr.f,py+6*pr.f,13*pr.f,0,Math.PI*2);c2.fill();
+      }
+    }
+    for(var d=0;d<classic.texts.length;d++){
+      var ft=classic.texts[d];ft.t+=0.016;
+      if(ft.t>0.9)classic.texts.splice(d--,1);
+      else{
+        c2.globalAlpha=Math.max(0,1-ft.t/0.9);
+        c2.font='10px sans-serif';c2.textAlign='center';
+        c2.fillStyle=clCol(ft.col,1);
+        c2.fillText(ft.str,ft.x,ft.y-14*ft.t);
+        c2.globalAlpha=1;
+      }
+    }
+    clDrawForeground(c2,litW);
+    if(boosting2(c))clDrawBoostRays(c2);
+    var flick=0.92+0.08*Math.sin(c.time*12.7)+0.05*Math.sin(c.time*31.3);
+    var lampX=CL_W*0.5+c.sway*10;
+    c2.save();
+    c2.translate(lampX,FP_H-14);
+    c2.scale(1,0.42);
+    clGlow(0,0,(150+160*litW)*flick*1.2,clHex('ffb45e'),(0.13+0.32*litW)*flick,4);
+    c2.restore();
+    clGlow(lampX,FP_H+24,(150+160*litW)*flick,clHex('ffb45e'),(0.11+0.27*litW)*flick,4);
+    clGlow(lampX,FP_H+24,(150+160*litW)*flick*0.55,clHex('ffd98a'),(0.12+0.26*litW)*flick,3);
+    var warn=0;
+    if(c.scraping)warn=Math.max(warn,0.22);
+    if(c.pressure/100>0.55)warn=Math.max(warn,(c.pressure/100-0.55)*0.5*(0.6+0.4*Math.sin(c.time*7)));
+    if(c.invuln>0&&(c.time%0.3)<0.15)warn=Math.max(warn,0.28);
+    if(warn>0){
+      c2.strokeStyle=clCol([255,30,20],warn);
+      c2.lineWidth=14;
+      c2.strokeRect(7,7,CL_W-14,FP_H-14);
+    }
+  }
+  function boosting2(c){return !!(keys['arrowup']||keys['w'])&&c.status==='play'}
+  function clDrawBoostRays(c2){
+    var center={x:CL_W*0.5,y:FP_H*0.62};
+    c2.strokeStyle='rgba(255,255,255,0.16)';
+    for(var i=0;i<14;i++){
+      var ang=Math.PI*2*i/14+classic.time*0.5;
+      var len=40+60*((classic.time*3+i*0.3)%1);
+      c2.lineWidth=1.2;
+      c2.beginPath();
+      c2.moveTo(center.x+Math.cos(ang)*20,center.y+Math.sin(ang)*20);
+      c2.lineTo(center.x+Math.cos(ang)*(20+len),center.y+Math.sin(ang)*(20+len));
+      c2.stroke();
+    }
+  }
+  function clDrawForeground(c2,litW){
+    var col=clHex('0d0807'),H2=FP_H;
+    var left=[[-8,H2+8],[-8,H2-86],[26,H2-106],[54,H2-94],[86,H2-112],[120,H2-78],[104,H2-38],[76,H2+8]];
+    c2.fillStyle=clCol(col,1);
+    clPoly(left.map(function(p){return{x:p[0],y:p[1]}}));c2.fill();
+    var right=left.map(function(p){return{x:CL_W-p[0],y:p[1]}});
+    clPoly(right);c2.fill();
+    var rim=0.28+0.35*litW;
+    c2.strokeStyle=clCol([243,140,66],rim);
+    c2.lineWidth=1;
+    c2.beginPath();c2.moveTo(26,H2-106);c2.lineTo(86,H2-112);c2.lineTo(120,H2-78);c2.stroke();
+    c2.beginPath();c2.moveTo(CL_W-26,H2-106);c2.lineTo(CL_W-86,H2-112);c2.lineTo(CL_W-120,H2-78);c2.stroke();
+  }
+  function clDrawSide(c2){
+    var c=classic;
+    var str=clStrata(c.depth);
+    c2.fillStyle=clCol(clDark(str,0.86),1);
+    c2.fillRect(0,0,CL_W,STRIP_H);
+    var y0=c.depth-110,y1=c.depth+150;
+    var step=10;
+    var mk=function(y,side){
+      var wx=clCorridorCenter(y)+(side<0?-1:1)*clCorridorHalf(y);
+      return {x:CL_W*0.5+(wx-c.playerX)*0.8,y:150+(y-c.depth)*0.45};
+    };
+    var pl=[],pr2=[];
+    for(var y=y0;y<=y1;y+=step){pl.push(mk(y,-1));pr2.push(mk(y,1))}
+    c2.fillStyle=clCol(clDark(str,0.55),1);
+    var lp=[];
+    for(var i=0;i<pl.length;i++)lp.push(pl[i]);
+    lp.push({x:pl[pl.length-1].x-120,y:y1<=c.depth?209:222});
+    lp.push({x:pl[0].x-120,y:76});
+    clPoly(lp);c2.fill();
+    var rp=[];
+    for(var j=0;j<pr2.length;j++)rp.push(pr2[j]);
+    rp.push({x:pr2[pr2.length-1].x+120,y:y1<=c.depth?209:222});
+    rp.push({x:pr2[0].x+120,y:76});
+    clPoly(rp);c2.fill();
+    for(var k=0;k<c.entities.length;k++){
+      var e=c.entities[k],dy=e.y-c.depth;
+      if(dy<-60||dy>180)continue;
+      var mx2=CL_W*0.5+(e.x-c.playerX)*0.8,my2=150+dy*0.45;
+      if(my2<6||my2>STRIP_H-6)continue;
+      var col2=e.kind==='crystal'?clHex('7ee8e0'):e.kind==='ore'?clHex('ffd75e'):e.kind==='rock'?clHex('9a95a8'):clHex('9ad94d');
+      c2.fillStyle=clCol(col2,0.95);
+      if(e.kind==='gas'){c2.globalAlpha=0.7;c2.beginPath();c2.arc(mx2,my2,5,0,Math.PI*2);c2.fill();c2.globalAlpha=1}
+      else{c2.fillRect(mx2-3,my2-3,6,6)}
+    }
+    c2.fillStyle=clCol(clHex('3a2a36'),0.9);
+    c2.fillRect(0,STRIP_H-1,CL_W,1);
+    clDrawTex(clTexPlayer(),CL_W*0.5,150,0.8,0);
+    c2.strokeStyle='rgba(131,239,255,0.7)';c2.lineWidth=1;
+    c2.strokeRect(CL_W*0.5-10,138,20,24);
+  }
+  function clDrawOverlay(c2){
+    var c=classic;
+    c2.fillStyle='rgba(0,0,0,0.62)';c2.fillRect(0,0,CL_W,CL_H);
+    c2.textAlign='center';
+    if(c.status==='title'){
+      c2.fillStyle=clCol(clHex('ff8c3b'),1);
+      c2.font='700 30px sans-serif';c2.fillText('地 心 探 险',CL_W/2,150);
+      c2.font='600 12px sans-serif';c2.fillText('CORE EXPEDITION',CL_W/2,178);
+      c2.fillStyle=clCol(clHex('eaf1f3'),0.95);
+      c2.font='10px sans-serif';
+      c2.fillText('第一人称视角，向 10,000 米地心下潜 / First-person dive to the 10,000 m core',CL_W/2,208);
+      c2.fillText('← → / A D 移动 · ↑ / W 加速 / Move · Boost',CL_W/2,226);
+      c2.fillText('冰晶降压 · 黄光石 3 秒强光 / Crystals cool · ore gives 3s light',CL_W/2,244);
+      c2.fillText('躲开落石与毒气，温压过载则失败 / Avoid rocks & gas or pressure overloads',CL_W/2,262);
+      c2.fillStyle=clCol(clHex('ffd75e'),1);
+      c2.font='600 14px sans-serif';
+      c2.fillText('按 Enter / 空格 开始 / Press Enter or Space to Start',CL_W/2,330);
+      if(c.best>0){
+        c2.fillStyle=clCol(clHex('bfd2da'),0.8);
+        c2.font='10px sans-serif';
+        c2.fillText('最佳记录 / Best: '+fmt(c.best)+' m',CL_W/2,360);
+      }
+      c2.fillStyle=clCol(clHex('6b7f88'),0.8);
+      c2.font='9px sans-serif';
+      c2.fillText('Esc 返回 / Return · M 声音 / Sound · 全程键盘 / Keyboard Only',CL_W/2,392);
+    }else{
+      var win=c.status==='win';
+      c2.fillStyle=clCol(win?clHex('ffd75e'):clHex('e0455a'),1);
+      c2.font='700 25px sans-serif';
+      c2.fillText(win?'抵达地心核心！':'探 险 失 败',CL_W/2,150);
+      c2.font='600 12px sans-serif';c2.fillText(win?'CORE REACHED!':'EXPEDITION FAILED',CL_W/2,178);
+      c2.fillStyle=clCol(clHex('e6eff2'),0.95);
+      c2.font='11px sans-serif';
+      c2.fillText(win?'你穿过了 10,000 米的岩层 / You crossed 10,000 m of rock':'原因：温压过载 / Cause: Pressure Overload',CL_W/2,210);
+      c2.fillText('到达深度 / Depth: '+fmt(c.depth)+' m',CL_W/2,230);
+      c2.fillText('最佳记录 / Best: '+fmt(Math.max(c.best,Math.floor(c.depth)))+' m',CL_W/2,250);
+      c2.fillStyle=clCol(clHex('ffc36b'),1);
+      c2.font='600 12px sans-serif';
+      c2.fillText('Enter / Space: Retry　　Esc: Return to Title',CL_W/2,330);
+    }
+  }
+  function clDrawHud(c2){
+    var c=classic;
+    c2.textAlign='center';
+    c2.fillStyle=clCol(clHex('fff2b0'),1);
+    c2.font='600 20px sans-serif';
+    c2.fillText(fmt(c.depth)+' m',CL_W/2,238);
+    c2.textAlign='left';
+    c2.font='9px sans-serif';
+    c2.fillStyle=clCol(clHex('ff9999'),1);
+    c2.fillText('温压 Pressure',8,CL_H-40);
+    c2.fillStyle=clCol(clHex('ffd98a'),1);
+    c2.fillText('强光 Boost',CL_W-58,CL_H-40);
+    c2.fillStyle='rgba(26,20,31,0.92)';
+    c2.fillRect(8,CL_H-28,160,12);c2.fillRect(CL_W-168,CL_H-28,160,12);
+    var t=c.pressure/100;
+    c2.fillStyle=clCol(clMix([224,69,90],[255,64,64],t),1);
+    c2.fillRect(9,CL_H-27,158*t,10);
+    c2.fillStyle=clCol(clHex('ffb45e'),1);
+    c2.fillRect(CL_W-167,CL_H-27,clamp(c.boost/3,0,1)*158,10);
+    if(c.status==='play'&&classic.time<6){
+      c2.globalAlpha=Math.max(0,1-(classic.time-4)/2);
+      c2.textAlign='center';
+      c2.fillStyle='rgba(255,255,255,0.9)';
+      c2.font='11px sans-serif';
+      c2.fillText('← → / A D move · ↑ / W boost · Esc exit',CL_W/2,530);
+      c2.globalAlpha=1;
+    }
+  }
+  function clVignette(c2){
+    var g=c2.createRadialGradient(CL_W*0.5,CL_H*0.48,CL_W*0.1,CL_W*0.5,CL_H*0.48,Math.max(CL_W,CL_H)*0.75);
+    g.addColorStop(0,'rgba(0,0,0,0)');
+    g.addColorStop(1,'rgba(0,0,0,0.55)');
+    c2.fillStyle=g;c2.fillRect(0,0,CL_W,CL_H);
+  }
+  function drawClassic(now){
+    if(classic.status==='idle')return;
+    var c2=clGetCtx();
+    c2.setTransform(DPR,0,0,DPR,0,0);
+    c2.clearRect(0,0,W,H);
+    c2.fillStyle='#050309';c2.fillRect(0,0,W,H);
+    c2.save();
+    c2.translate(classic.ox,classic.oy);
+    c2.scale(classic.scale,classic.scale);
+    c2.fillStyle='#000';c2.fillRect(0,0,CL_W,CL_H);
+    clDrawSide(c2);
+    c2.save();
+    c2.beginPath();c2.rect(0,STRIP_H,CL_W,FP_H);c2.clip();
+    c2.translate(0,STRIP_H);
+    clDrawLower(c2);
+    c2.restore();
+    clDrawHud(c2);
+    if(classic.status!=='play')clDrawOverlay(c2);
+    clVignette(c2);
+    c2.restore();
+  }
+
+  /* ---------- canvas visuals ---------- */
+  function genCracks(){
+    cracks=[];
+    for(var i=0;i<70;i++){
+      cracks.push({
+        x:Math.random(),y:Math.random(),
+        a:Math.random()*Math.PI*2,
+        len:0.05+Math.random()*0.16,
+        th:Math.random()*2+0.6
+      });
+    }
+  }
+
+  function spawnParticles(n){
+    for(var i=0;i<n;i++){
+      var ang=Math.random()*Math.PI*2;
+      var rr=Math.random()*Math.min(W,H)*0.06;
+      particles.push({
+        x:W/2+Math.cos(ang)*rr,
+        y:H/2+Math.sin(ang)*rr,
+        vx:Math.cos(ang),
+        vy:Math.sin(ang),
+        sp:60+Math.random()*260,
+        life:1,
+        c:Math.random()<0.22?'255,195,107':'131,239,255'
+      });
+    }
+  }
+
+  function updateParticles(dt){
+    var target=game.mode==='fly'?90:18;
+    if(Math.random()<dt*target)spawnParticles(1);
+    for(var i=particles.length-1;i>=0;i--){
+      var p=particles[i];
+      p.x+=p.vx*p.sp*dt;
+      p.y+=p.vy*p.sp*dt;
+      p.sp+=300*dt;
+      p.life-=dt*(0.7+Math.min(0.9,game.heat/100)*0.4);
+      if(p.life<=0||p.x<-40||p.x>W+40||p.y<-40||p.y>H+40)particles.splice(i,1);
+    }
+  }
+
+  function drawHighBackground(glowColor){
+    var top,mid,bot;
+    if(game.visual==='2d'){
+      top='#0e0c09';mid='#17120c';bot='#241509';
+    }else{
+      var h=Math.min(1,game.heat/100);
+      top='#04060d';mid='#081019';
+      bot='rgba(60,18,10,'+(0.15+h*0.8)+')';
+    }
+    var g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,top);g.addColorStop(0.55,mid);g.addColorStop(1,bot);
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+    var cx=W/2,cy=H/2;
+    var rg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.7);
+    rg.addColorStop(0,glowColor||'rgba(255,150,80,0.06)');
+    rg.addColorStop(0.5,'rgba(255,100,50,0.025)');
+    rg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+
+    // depth rings
+    ctx.save();ctx.translate(cx,cy);ctx.lineWidth=1;
+    for(var i=0;i<7;i++){
+      var ph=(ptime*0.045+i/7)%1;
+      var rad=Math.pow(ph,0.6)*Math.hypot(W,H)*0.75;
+      ctx.beginPath();
+      ctx.ellipse(0,0,Math.max(rad,2),Math.max(rad*0.9,2),0,0,Math.PI*2);
+      ctx.strokeStyle='rgba(140,170,185,'+(0.028+ph*0.05)+')';
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawParticles(){
+    for(var i=0;i<particles.length;i++){
+      var p=particles[i];
+      ctx.strokeStyle='rgba('+p.c+','+(p.life*0.5).toFixed(3)+')';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(p.x-p.vx*p.sp*0.045,p.y-p.vy*p.sp*0.045);
+      ctx.stroke();
+    }
+  }
+
+  function scenePalette(){
+    if(!flight)return '131,239,255';
+    if(flight.id==='f1')return '131,239,255';
+    if(flight.id==='f2')return '255,170,90';
+    if(flight.id==='f3')return '255,105,70';
+    return '255,215,140';
+  }
+
+  function drawGate3D(g){
+    var cx=W/2,cy=H/2,V=Math.min(W,H)*0.5;
+    var prog=clamp(1-g.life,0,1);
+    var ease=Math.pow(prog,0.92);
+    var wallR=Math.hypot(W,H)*(0.04+ease*1.28)+30;
+    var holeR=Math.max(4,Math.hypot(W,H)*0.012+g.gapR*V*ease);
+    var hx=cx+g.gx*V*ease,hy=cy+g.gy*V*ease;
+    ctx.save();
+    var jag=Math.sin(ptime*2.4)*0.012+Math.sin(ptime*7.3)*0.01;
+    ctx.fillStyle='rgba(10,14,21,0.94)';
+    ctx.strokeStyle='rgba('+scenePalette()+','+(0.14+ease*0.42)+')';
+    ctx.lineWidth=Math.max(1,wallR*0.006);
+    ctx.beginPath();
+    var n=Math.max(36,Math.min(110,Math.floor(wallR/7)));
+    for(var i=0;i<=n;i++){
+      var ang=i/n*Math.PI*2;
+      var rad=wallR*(1+jag*Math.sin(ang*9+ptime*5)+0.018*Math.sin(ang*17-ptime*8));
+      var px=cx+Math.cos(ang)*rad,py=cy+Math.sin(ang)*rad;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.moveTo(hx+holeR,hy);
+    ctx.arc(hx,hy,holeR,0,Math.PI*2,true);
+    ctx.fill('evenodd');
+    ctx.beginPath();ctx.arc(hx,hy,holeR,0,Math.PI*2);ctx.stroke();
+    // glowing guidance
+    ctx.beginPath();ctx.arc(hx,hy,Math.max(4,holeR*0.2),0,Math.PI*2);
+    ctx.fillStyle='rgba('+scenePalette()+','+(0.25+ease*0.6)+')';ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCursor3D(){
+    var cx=W/2,cy=H/2,V=Math.min(W,H)*0.5;
+    var x=cx+cursor.x*V,y=cy+cursor.y*V;
+    var hot=game.heat>68;
+    var col=hot?'255,77,90':'131,239,255';
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.strokeStyle='rgba('+col+',0.75)';
+    ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(0,0,13+Math.sin(ptime*4)*1.5,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,23,0,Math.PI*2);ctx.strokeStyle='rgba('+col+',0.16)';ctx.stroke();
+    ctx.fillStyle='rgba('+col+',0.95)';
+    ctx.beginPath();ctx.arc(0,0,3.4,0,Math.PI*2);ctx.fill();
+    ctx.rotate(ptime*0.8);
+    ctx.beginPath();ctx.moveTo(31,0);ctx.lineTo(25,-5);ctx.lineTo(25,5);ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHigh(t){
+    drawHighBackground();
+    drawParticles();
+    if(game.mode==='fly'&&flight&&flight.gate){
+      drawGate3D(flight.gate);
+    }
+    if(game.mode==='fly'&&flight)drawCursor3D();
+  }
+
+  function drawLowFrame(){
+    var lw=low.width,lh=low.height;
+    lctx.setTransform(1,0,0,1,0,0);
+    lctx.clearRect(0,0,lw,lh);
+    var bg=lctx.createLinearGradient(0,0,0,lh);
+    bg.addColorStop(0,'#100d0a');bg.addColorStop(1,'#2a150b');
+    lctx.fillStyle=bg;lctx.fillRect(0,0,lw,lh);
+    // sketch cracks
+    lctx.strokeStyle='rgba(140,105,70,0.34)';lctx.lineWidth=1;
+    for(var i=0;i<cracks.length;i++){
+      var c=cracks[i];
+      var x=c.x*lw,y=c.y*lh;
+      lctx.beginPath();
+      lctx.moveTo(x,y);
+      lctx.lineTo(x+Math.cos(c.a)*c.len*lw,y+Math.sin(c.a)*c.len*lh);
+      lctx.stroke();
+    }
+    var cx=lw/2,cy=lh/2,V=Math.min(lw,lh)*0.5;
+    // ground / heat glow
+    var rg=lctx.createRadialGradient(cx,cy,0,cx,cy,V*0.8);
+    rg.addColorStop(0,'rgba(255,110,50,0.20)');rg.addColorStop(1,'rgba(0,0,0,0)');
+    lctx.fillStyle=rg;lctx.fillRect(0,0,lw,lh);
+    if(game.mode==='fly'&&flight&&flight.gate){
+      var g=flight.gate;
+      var prog=clamp(1-g.life,0,1);
+      var ease=Math.pow(prog,0.9);
+      var wallR=Math.hypot(lw,lh)*(0.03+ease*1.3);
+      var holeR=Math.max(2,g.gapR*V*ease+Math.hypot(lw,lh)*0.012);
+      var hx=cx+g.gx*V*ease,hy=cy+g.gy*V*ease;
+      lctx.fillStyle='#030303';
+      lctx.beginPath();
+      var n=Math.max(16,Math.min(44,Math.floor(wallR/2)));
+      for(var j=0;j<=n;j++){
+        var ang=j/n*Math.PI*2;
+        var rad=wallR*(1+0.05*Math.sin(ang*7)+0.04*Math.sin(ang*13+2));
+        var px=cx+Math.cos(ang)*rad,py=cy+Math.sin(ang)*rad;
+        if(j===0)lctx.moveTo(px,py);else lctx.lineTo(px,py);
+      }
+      lctx.closePath();
+      lctx.moveTo(hx+holeR,hy);
+      lctx.arc(hx,hy,holeR,0,Math.PI*2,true);
+      lctx.fill('evenodd');
+      lctx.strokeStyle='rgba('+scenePalette()+',0.75)';lctx.lineWidth=1;
+      lctx.beginPath();lctx.arc(hx,hy,holeR,0,Math.PI*2);lctx.stroke();
+    }
+    // cursor as pixel eye
+    if(game.mode==='fly'&&flight){
+      var x=cx+cursor.x*V,y=cy+cursor.y*V;
+      var sz=Math.max(3,V*0.035);
+      lctx.fillStyle='rgba(245,232,200,0.95)';
+      lctx.fillRect(x-sz,y-sz,sz*2,sz*2);
+      lctx.fillStyle='rgba(0,0,0,0.9)';
+      lctx.fillRect(x-sz*0.25,y-sz*0.25,sz*0.5,sz*0.5);
+    }
+  }
+
+  function draw(t){
+    ptime=t;
+    if(game.visual==='2d'){
+      drawLowFrame();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,scene.width,scene.height);
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(low,0,0,scene.width,scene.height);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+    }else{
+      ctx.clearRect(0,0,W,H);
+      drawHigh(t);
+    }
+  }
+
+  /* ---------- main loop ---------- */
+  var last=performance.now();
+  function loop(now){
+    requestAnimationFrame(loop);
+    var dt=Math.min(0.05,(now-last)/1000);last=now;
+    updateParticles(dt);
+    if(game.mode==='cg')updateCG(dt);
+    if(game.mode==='fly')updateFlight(dt);
+    if(game.mode==='classic')clUpdate(dt);
+    var kx=(keys['arrowright']||keys['d']?1:0)-(keys['arrowleft']||keys['a']?1:0);
+    var ky=(keys['arrowdown']||keys['s']?1:0)-(keys['arrowup']||keys['w']?1:0);
+    if(game.mode==='fly'&&!game.demo&&(kx||ky)){
+      cursor.tx=clamp(cursor.tx+kx*dt*1.9,-0.95,0.95);
+      cursor.ty=clamp(cursor.ty+ky*dt*1.9,-0.95,0.95);
+    }
+    var ease=1-Math.exp(-dt*(game.demo?12:8));
+    cursor.x+=(cursor.tx-cursor.x)*ease;
+    cursor.y+=(cursor.ty-cursor.y)*ease;
+    draw(now/1000);
+    if(game.mode==='classic')drawClassic(now);
+  }
+
+  /* ---------- events ---------- */
+  $('btnStart').addEventListener('click',showCG);
+  $('btnDirect').addEventListener('click',function(){startGame(false)});
+  $('btn2D').addEventListener('click',clLaunch);
+  $('btnDemo').addEventListener('click',function(){startGame(true)});
+  $('btnTrailer').addEventListener('click',openTrailer);
+  $('trailerClose').addEventListener('click',closeTrailer);
+  $('cgSkip').addEventListener('click',skipCG);
+  $('btnPalm').addEventListener('click',togglePalm);
+  $('palmBtn2').addEventListener('click',togglePalm);
+  $('soundBtn').addEventListener('click',function(){setMuted(!game.muted)});
+  $('autoBtn').addEventListener('click',function(){
+    game.demo=!game.demo;updateDemoUI();
+    if(game.demo&&flight&&flight.gate){
+      cursor.tx=flight.gate.gx;cursor.ty=flight.gate.gy;
+    }
+    toast(game.demo?'已开启自动巡航（演示模式）':'已切换为手动操控');
+  });
+  $('skipBtn').addEventListener('click',skipFlight);
+  $('btnRestart').addEventListener('click',function(){location.reload()});
+
+  window.addEventListener('resize',resize);
+  resize();updateHUD();updateDemoUI();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
